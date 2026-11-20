@@ -3,7 +3,8 @@
 0순위: Typecast 등에서 받은 음성 파일 (assets/voice/)
    - 대본 6단락을 각각 파일로: 01.wav ~ 06.wav (mp3/m4a도 가능, 이름순 정렬)
    - 또는 전체 1개 파일: 단락 사이 무음(약 0.8초 이상)을 찾아 자동으로 6조각으로 자름
-1순위: OpenAI TTS (gpt-4o-mini-tts) — 네트워크 프록시가 키를 주입하므로 코드에는 키가 없다.
+1순위: Google Cloud TTS (--engine google, Chirp3-HD 한국어)
+2순위: OpenAI TTS (gpt-4o-mini-tts) — 네트워크 프록시가 키를 주입하므로 코드에는 키가 없다.
 2순위(폴백): espeak-ng 한국어 음성 (오프라인).
 
 각 대사를 build/narr_XX.wav (44.1kHz mono) 로 저장하고, 실제 길이(ffprobe)를 반환한다.
@@ -49,6 +50,45 @@ def _openai_tts(text, raw_path):
         data = r.read()
     with open(raw_path, "wb") as f:
         f.write(data)
+
+
+# Google Cloud TTS: 광고 톤에 맞는 한국어 음성 우선순위 (사용 가능한 첫 음성 사용)
+GOOGLE_VOICES = ["ko-KR-Chirp3-HD-Charon", "ko-KR-Chirp3-HD-Orus", "ko-KR-Neural2-C", "ko-KR-Wavenet-C"]
+GOOGLE_VOICE = os.environ.get("GOOGLE_TTS_VOICE")
+
+
+def _google_req(path, body=None):
+    req = urllib.request.Request(
+        "https://texttospeech.googleapis.com" + path,
+        data=json.dumps(body).encode() if body is not None else None,
+        headers={"Content-Type": "application/json",
+                 # 실제 키는 네트워크 프록시가 주입한다 (placeholder).
+                 "X-Goog-Api-Key": os.environ.get("GOOGLE_API_KEY", "proxy-injected")})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        return json.load(r)
+
+
+def _google_pick_voice():
+    global GOOGLE_VOICE
+    if GOOGLE_VOICE:
+        return GOOGLE_VOICE
+    names = {v["name"] for v in _google_req("/v1/voices?languageCode=ko-KR")["voices"]}
+    GOOGLE_VOICE = next((v for v in GOOGLE_VOICES if v in names), sorted(names)[0])
+    return GOOGLE_VOICE
+
+
+def _google_tts(text, raw_path):
+    import base64
+    voice = _google_pick_voice()
+    cfg = {"audioEncoding": "LINEAR16", "sampleRateHertz": 44100}
+    if "Chirp3" not in voice:  # Chirp3-HD 는 speakingRate 외 파라미터 미지원
+        cfg.update(speakingRate=1.12, pitch=1.0)
+    else:
+        cfg.update(speakingRate=1.08)
+    d = _google_req("/v1/text:synthesize", {
+        "input": {"text": text}, "voice": {"languageCode": "ko-KR", "name": voice}, "audioConfig": cfg})
+    with open(raw_path, "wb") as f:
+        f.write(base64.b64decode(d["audioContent"]))
 
 
 def _espeak_tts(text, raw_path):
@@ -103,6 +143,8 @@ def generate(build_dir, engine="auto"):
         if len(files) != len(LINES):
             raise SystemExit(f"[narration] assets/voice 에 파일이 {len(files)}개입니다. "
                              f"단락별 {len(LINES)}개 또는 전체 1개를 넣어주세요.")
+    elif engine == "google":
+        print(f"[narration] Google voice = {_google_pick_voice()}")
     elif engine == "auto":
         try:
             _openai_tts(LINES[0], os.path.join(build_dir, "probe.wav"))
@@ -118,7 +160,7 @@ def generate(build_dir, engine="auto"):
         if use == "files":
             raw = files[i]
         else:
-            (_openai_tts if use == "openai" else _espeak_tts)(line, raw)
+            {"openai": _openai_tts, "google": _google_tts}.get(use, _espeak_tts)(line, raw)
         # 앞뒤 무음 제거 + 보이스 EQ/컴프레션 (방송 톤)
         af = ("silenceremove=start_periods=1:start_threshold=-45dB,"
               "areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
