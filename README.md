@@ -4,7 +4,7 @@
 |---|---|---|---|
 | ep1 | 타이어, 아직도 가격만 보고 바꾸세요? | `output/kumho_songwol_shorts.mp4` | `python3 make_video.py` |
 | ep2 | 타이어 4개 바꾸려는데… 왜 이렇게 비싸? | `output/kumho_songwol_shorts_ep2.mp4` | `python3 make_video.py --ep ep2` |
-| 그랜저 40년 2/8 | 각그랜저는 왜 부의 상징이 됐을까? (제작안) | `docs/ep_grandeur_02_plan.md` | — |
+| 그랜저 40년 2/8 | 각그랜저는 왜 부의 상징이 됐을까? (정보형, 매장 홍보 없음) | `output/grandeur40_02_gak_grandeur.mp4` · 업로드 문구 `docs/ep_grandeur_02_upload.md` | `python3 ep_grandeur2.py` |
 
 새 에피소드는 `ep2.py`를 복사해 대본(LINES/CHUNKS)과 장면 함수를 바꾸면 됩니다.
 
