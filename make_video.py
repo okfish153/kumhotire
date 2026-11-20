@@ -37,7 +37,8 @@ def weight(s):
     return len(s.replace(" ", "")) + 2.5 * sum(s.count(p) for p in ",!?")
 
 
-def build_timeline(durs):
+def build_timeline(durs, chunks_def=None, shakes_fn=None):
+    chunks_def = chunks_def or CHUNKS
     starts, t = [], LEAD
     for d in durs:
         starts.append(round(t, 3))
@@ -46,9 +47,9 @@ def build_timeline(durs):
     scene_starts = [0.0] + [round(s - 0.15, 3) for s in starts[1:]]
     chunks = []
     for i, (st, d) in enumerate(zip(starts, durs)):
-        ws = [weight(c) for c in CHUNKS[i]]
+        ws = [weight(c) for c in chunks_def[i]]
         acc, cl = st, []
-        for j, (c, w) in enumerate(zip(CHUNKS[i], ws)):
+        for j, (c, w) in enumerate(zip(chunks_def[i], ws)):
             dd = d * w / sum(ws)
             end = acc + dd
             # 다음 대사 직전까지 자막 유지 (마지막 대사는 영상 끝까지)
@@ -57,8 +58,11 @@ def build_timeline(durs):
             cl.append((round(acc, 3), round(end, 3), c))
             acc += dd
         chunks.append(cl)
-    shakes = [(chunks[0][1][0], 1.0), (scene_starts[1], 1.0), (scene_starts[3], 0.8),
-              (chunks[4][1][0], 0.8), (chunks[5][1][0], 0.9)]
+    if shakes_fn:
+        shakes = shakes_fn(chunks, scene_starts)
+    else:
+        shakes = [(chunks[0][1][0], 1.0), (scene_starts[1], 1.0), (scene_starts[3], 0.8),
+                  (chunks[4][1][0], 0.8), (chunks[5][1][0], 0.9)]
     return dict(total=total, line_starts=starts, line_durs=durs, scene_starts=scene_starts,
                 chunks=chunks, shakes=shakes)
 
@@ -109,39 +113,52 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--engine", default="auto", choices=["auto", "files", "supertonic", "google", "openai", "espeak"])
     ap.add_argument("--preview", nargs="*", type=float)
+    ap.add_argument("--ep", default="ep1", help="에피소드: ep1(기본), ep2 ...")
     a = ap.parse_args()
+    if a.ep == "ep1":
+        BUILD, name, lines, chunks_def, sfx_fn, shakes_fn, extra, vdir = (
+            globals()["BUILD"], "kumho_songwol_shorts", narration.LINES, CHUNKS, sfx_events, None, {}, None)
+    else:
+        import importlib
+        E = importlib.import_module(a.ep)   # 예: ep2.py
+        BUILD = os.path.join(globals()["BUILD"], a.ep)
+        name, lines, chunks_def, sfx_fn, shakes_fn, extra = (
+            E.OUT_NAME, E.LINES, E.CHUNKS, E.sfx_events, E.shakes, E.EXTRA)
+        vdir = os.path.join(ROOT, "assets", "voice", a.ep)
     os.makedirs(BUILD, exist_ok=True); os.makedirs(OUT, exist_ok=True)
 
     tl_path = os.path.join(BUILD, "timeline.json")
     if a.preview is not None and os.path.exists(tl_path):
         tl = json.load(open(tl_path))
         video.TL = tl
+        if a.ep != "ep1":
+            importlib.import_module(a.ep)
         for s in a.preview:
             p = os.path.join(BUILD, f"preview_{s:05.2f}.png")
             video.frame(int(s * video.FPS)).save(p)
             print(p)
         return
 
-    engine, durs = narration.generate(BUILD, a.engine)
-    tl = build_timeline(durs)
-    tl["engine"] = engine
+    engine, durs = narration.generate(BUILD, a.engine, lines, vdir)
+    tl = build_timeline(durs, chunks_def, shakes_fn)
+    tl.update(engine=engine, ep=a.ep, **extra)
     json.dump(tl, open(tl_path, "w"), ensure_ascii=False, indent=1)
     print(f"[timeline] total {tl['total']}s, lines at {tl['line_starts']}")
 
     mix = os.path.join(BUILD, "mix.wav")
     audio.build_mix(tl["total"], [os.path.join(BUILD, f"narr_{i:02d}.wav") for i in range(len(durs))],
-                    tl["line_starts"], sfx_events(tl), mix)
+                    tl["line_starts"], sfx_fn(tl), mix)
     print("[audio] mix done")
 
     vid = video.render(tl, BUILD)
     print("[video] frames done")
 
-    final = os.path.join(OUT, "kumho_songwol_shorts.mp4")
+    final = os.path.join(OUT, name + ".mp4")
     subprocess.check_call([
         "ffmpeg", "-y", "-loglevel", "error", "-i", vid, "-i", mix,
         "-af", "loudnorm=I=-14:TP=-1.5:LRA=9", "-c:v", "copy", "-c:a", "aac", "-b:a", "192k",
         "-ar", "48000", "-movflags", "+faststart", "-shortest", final])
-    write_srt(tl, os.path.join(OUT, "kumho_songwol_shorts.srt"))
+    write_srt(tl, os.path.join(OUT, name + ".srt"))
     print("[done]", final)
 
 

@@ -1,5 +1,12 @@
 # 금호타이어 송월점 – 유튜브 숏츠 / 인스타 릴스
 
+| 에피소드 | 주제 | 결과물 | 다시 만들기 |
+|---|---|---|---|
+| ep1 | 타이어, 아직도 가격만 보고 바꾸세요? | `output/kumho_songwol_shorts.mp4` | `python3 make_video.py` |
+| ep2 | 타이어 4개 바꾸려는데… 왜 이렇게 비싸? | `output/kumho_songwol_shorts_ep2.mp4` | `python3 make_video.py --ep ep2` |
+
+새 에피소드는 `ep2.py`를 복사해 대본(LINES/CHUNKS)과 장면 함수를 바꾸면 됩니다.
+
 대본(`assets/script.pdf`)과 포스터·매장 사진(`assets/images/`)으로 만든 30초 세로 홍보 영상(1080x1920, 30fps).
 
 - 결과물: `output/kumho_songwol_shorts.mp4` (+ 업로드용 자막 `output/kumho_songwol_shorts.srt`)

@@ -414,8 +414,10 @@ def scene2(c, t):
     paste(c, badge, 880, 1040, pc, 8, clamp(pc))
 
 
-def scene3(c, t):
-    s0 = TL["scene_starts"][2]
+def scene3(c, t, line=2, title_txt="꼼꼼한 점검",
+           labels=(("01", "타이어 상태"), ("02", "마모 점검"), ("03", "휠얼라인먼트")),
+           times_fn=None, stamp_txt="꼼꼼하게!"):
+    s0 = TL["scene_starts"][line]
     lt = t - s0
     c.alpha_composite(dark_grad())
     draw_stripes(c, t)
@@ -423,7 +425,7 @@ def scene3(c, t):
     # 타이틀
     pt = out_back(prog(lt, 0.0, 0.4))
     title = compose((box(560, 120, 60, RED, shadow=False), 0, 0),
-                    (text_img("꼼꼼한 점검", 76, WHITE, "Black", shadow=0), 0, -3))
+                    (text_img(title_txt, 76, WHITE, "Black", shadow=0), 0, -3))
     paste(c, title, 540, 300, pt, 0, clamp(pt))
     # 매장 사진 카드 + Ken Burns
     pc = out_cubic(prog(lt, 0.05, 0.45))
@@ -452,9 +454,8 @@ def scene3(c, t):
         scan = text_img("SCANNING" + "." * (int(lt * 4) % 4), 34, YEL, "ExtraBold", shadow=4)
         paste(c, scan, 160 + scan.width / 2 - 60, bot - 30)
     # 체크리스트
-    k0, k1, k2 = chunk_t(2, 0), chunk_t(2, 1), chunk_t(2, 2)
-    times = [k0 + 0.1, k0 + 0.55 * (k1 - k0), k1]
-    labels = [("01", "타이어 상태"), ("02", "마모 점검"), ("03", "휠얼라인먼트")]
+    k0, k1, k2 = chunk_t(line, 0), chunk_t(line, 1), chunk_t(line, 2)
+    times = times_fn(k0, k1, k2) if times_fn else [k0 + 0.1, k0 + 0.55 * (k1 - k0), k1]
     for i, (tt, (num, lab)) in enumerate(zip(times, labels)):
         p = out_cubic(prog(t, tt, 0.32))
         if p <= 0:
@@ -462,7 +463,7 @@ def scene3(c, t):
         pk = out_back(prog(t, tt + 0.3, 0.3))
         row = compose((box(900, 124, 30, WHITE), 0, 0),
                       (text_img(num, 54, RED, "Black", shadow=0), -370, 0),
-                      (text_img(lab, 64, INK, "Black", shadow=0), -60 - (0 if i != 2 else -20), -2))
+                      (text_img(lab, 64, INK, "Black", shadow=0), -60, -2))
         y = 940 + i * 150
         paste(c, row, 540 + (1 - p) * 800, y, 1, 0, p)
         if pk > 0:
@@ -470,8 +471,8 @@ def scene3(c, t):
             paste(c, check_circle(96), 900, y, pk * flash, 0, clamp(pk))
     # 꼼꼼하게! 스탬프
     pk = out_back(prog(t, k2, 0.35))
-    stamp = compose((box(420, 120, 24, YEL, INK, 6, False), 0, 0),
-                    (text_img("꼼꼼하게!", 76, INK, "Black", shadow=0), 0, -3))
+    st_img = text_img(stamp_txt, 76, INK, "Black", shadow=0)
+    stamp = compose((box(max(420, st_img.width + 40), 120, 24, YEL, INK, 6, False), 0, 0), (st_img, 0, -3))
     paste(c, stamp, 760, 800, pk, -7, clamp(pk))
 
 
@@ -567,7 +568,7 @@ def scene6(c, t):
     c.alpha_composite(bottom_glow(RED, 1100, 170), (0, H - 1100))
     draw_stripes(c, t)
     p0 = out_cubic(prog(lt, 0.0, 0.35))
-    paste(c, text_img("타이어 교환 고민 중이세요?", 72, WHITE, "Black", stroke=3), 540, 300 + (1 - p0) * 50, 1, 0, p0)
+    paste(c, text_img(TL.get("cta_top", "타이어 교환 고민 중이세요?"), 72, WHITE, "Black", stroke=3), 540, 300 + (1 - p0) * 50, 1, 0, p0)
     k1 = chunk_t(5, 1)
     p1 = out_cubic(prog(t, k1, 0.22))
     name = compose((box(980, 230, 36, RED, WHITE, 8), 0, 0),
@@ -590,6 +591,11 @@ def scene6(c, t):
                       (text_img("061-335-6114", 96, RED, "Black", shadow=0), 70, -4))
         pul = 1 + 0.035 * math.sin(since * 7)
         paste(c, btn, 540, 760, pp * pul, 0, clamp(pp))
+        if TL.get("cta_btn_tag"):
+            pg = out_back(prog(t, k1 + 0.75, 0.35))
+            bt = text_img(TL["cta_btn_tag"], 44, INK, "Black", shadow=0)
+            paste(c, compose((box(bt.width + 50, 72, 36, YEL, INK, 4, False), 0, 0), (bt, 0, -2)),
+                  850, 672, pg, 6, clamp(pg))
     # 주소
     pa = out_cubic(prog(t, k1 + 0.8, 0.35))
     addr = compose((pin_icon(56), -330, -4), (text_img("전남 나주시 예향로 4101", 58, WHITE, "Bold", stroke=2), 40, 0))
@@ -610,6 +616,7 @@ def scene6(c, t):
 
 
 SCENES = [scene1, scene2, scene3, scene4, scene5, scene6]
+EPISODES = {"ep1": SCENES}  # 다른 에피소드는 epN.py 에서 등록
 
 
 # ------------------------------------------------------------------ frame
@@ -630,7 +637,7 @@ def frame(idx):
     ss = TL["scene_starts"]
     si = max(i for i in range(len(ss)) if ss[i] <= t)
     c = Image.new("RGBA", (W, H), DARK + (255,))
-    SCENES[si](c, t)
+    EPISODES.get(TL.get("ep", "ep1"), SCENES)[si](c, t)
     c.alpha_composite(vignette())
     # 카메라 쉐이크
     dx, dy = shake(t, TL["shakes"])

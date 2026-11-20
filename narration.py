@@ -134,10 +134,11 @@ VOICE_DIR = os.path.join(ROOT, "assets", "voice")
 AUDIO_EXT = (".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac")
 
 
-def voice_files():
-    if not os.path.isdir(VOICE_DIR):
+def voice_files(vd=None):
+    vd = vd or VOICE_DIR
+    if not os.path.isdir(vd):
         return []
-    return sorted(os.path.join(VOICE_DIR, f) for f in os.listdir(VOICE_DIR)
+    return sorted(os.path.join(vd, f) for f in os.listdir(vd)
                   if f.lower().endswith(AUDIO_EXT))
 
 
@@ -165,32 +166,33 @@ def _split_single(path, n, build_dir):
     return outs
 
 
-def generate(build_dir, engine="auto"):
+def generate(build_dir, engine="auto", lines=None, voice_dir=None):
+    lines = lines or LINES
     os.makedirs(build_dir, exist_ok=True)
     use = engine
-    files = voice_files()
+    files = voice_files(voice_dir)
     if engine == "auto" and files:
         use = "files"
     if use == "files":
         if len(files) == 1:
-            files = _split_single(files[0], len(LINES), build_dir)
-        if len(files) != len(LINES):
+            files = _split_single(files[0], len(lines), build_dir)
+        if len(files) != len(lines):
             raise SystemExit(f"[narration] assets/voice 에 파일이 {len(files)}개입니다. "
-                             f"단락별 {len(LINES)}개 또는 전체 1개를 넣어주세요.")
+                             f"단락별 {len(lines)}개 또는 전체 1개를 넣어주세요.")
     elif engine == "google":
         print(f"[narration] Google voice = {_google_pick_voice()}")
     elif engine == "auto":
         use = "supertonic"
     elif engine == "auto-openai":
         try:
-            _openai_tts(LINES[0], os.path.join(build_dir, "probe.wav"))
+            _openai_tts(lines[0], os.path.join(build_dir, "probe.wav"))
             use = "openai"
         except Exception as e:  # 401, 네트워크 차단 등
             print(f"[narration] OpenAI TTS 사용 불가 ({e}) -> espeak-ng 폴백")
             use = "espeak"
     print(f"[narration] engine = {use}")
     durs = []
-    for i, line in enumerate(LINES):
+    for i, line in enumerate(lines):
         raw = os.path.join(build_dir, f"narr_raw_{i:02d}.wav")
         out = os.path.join(build_dir, f"narr_{i:02d}.wav")
         if use == "files":
