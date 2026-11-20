@@ -17,6 +17,6 @@
 
 ## 오디오
 - BGM·효과음: `audio.py`에서 직접 합성(124BPM 일렉트로 팝, whoosh/impact/pop/ding/cash 등). 저작권 걱정 없음.
-- 나레이션: `narration.py`. OpenAI TTS(`gpt-4o-mini-tts`)를 쓸 수 있으면 그 음성을, 아니면 오프라인 espeak-ng로 대체.
+- 나레이션: `narration.py`. 우선순위: ① `assets/voice/`에 넣은 음성 파일(Typecast 등, 넣는 방법은 `assets/voice/README.md`) ② OpenAI TTS ③ 오프라인 espeak-ng
 - 나레이션이 나올 때 BGM 볼륨을 자동으로 낮추고, 전체 음량은 -14 LUFS(숏츠/릴스 권장)로 맞춤.
 - 자막 타이밍과 장면 연출은 실제 나레이션 길이에 맞춰 자동으로 조정.
