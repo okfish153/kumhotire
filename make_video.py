@@ -107,7 +107,7 @@ def write_srt(tl, path):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--engine", default="auto", choices=["auto", "files", "google", "openai", "espeak"])
+    ap.add_argument("--engine", default="auto", choices=["auto", "files", "supertonic", "google", "openai", "espeak"])
     ap.add_argument("--preview", nargs="*", type=float)
     a = ap.parse_args()
     os.makedirs(BUILD, exist_ok=True); os.makedirs(OUT, exist_ok=True)

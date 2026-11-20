@@ -1,5 +1,6 @@
 """AI 나레이션 생성.
 
+기본(auto): assets/voice 파일 → 없으면 Supertonic 3 오프라인 신경망 음성
 0순위: Typecast 등에서 받은 음성 파일 (assets/voice/)
    - 대본 6단락을 각각 파일로: 01.wav ~ 06.wav (mp3/m4a도 가능, 이름순 정렬)
    - 또는 전체 1개 파일: 단락 사이 무음(약 0.8초 이상)을 찾아 자동으로 6조각으로 자름
@@ -11,6 +12,7 @@
 """
 import json
 import os
+import sys
 import subprocess
 import urllib.request
 
@@ -91,12 +93,44 @@ def _google_tts(text, raw_path):
         f.write(base64.b64decode(d["audioContent"]))
 
 
+# Supertonic 3 (오프라인 신경망 TTS, Supertone). sid 0~4 여성, 5~9 남성
+SUPERTONIC_SID = int(os.environ.get("SUPERTONIC_SID", "5"))     # 5 = 밝고 표현력 있는 남성
+SUPERTONIC_SPEED = float(os.environ.get("SUPERTONIC_SPEED", "1.0"))
+_ST = None
+
+
+def _supertonic_tts(text, raw_path):
+    global _ST
+    import wave
+    import numpy as np
+    import sherpa_onnx as so
+    if _ST is None:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        from fetch_supertonic import fetch
+        m = fetch(os.path.join(ROOT, "build", "supertonic")) + "/"
+        mc = so.OfflineTtsSupertonicModelConfig(
+            m + "duration_predictor.onnx", m + "text_encoder.onnx", m + "vector_estimator.onnx",
+            m + "vocoder.onnx", m + "tts.json", m + "unicode_indexer.bin", m + "voice.bin")
+        cfg = so.OfflineTtsModelConfig()
+        cfg.supertonic = mc
+        cfg.num_threads = 4
+        _ST = so.OfflineTts(so.OfflineTtsConfig(model=cfg))
+    g = so.GenerationConfig()
+    g.sid, g.speed, g.num_steps, g.extra = SUPERTONIC_SID, SUPERTONIC_SPEED, 16, {"lang": "ko"}
+    a = _ST.generate(text, g)
+    x = np.clip(np.asarray(a.samples), -1, 1)
+    with wave.open(raw_path, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(a.sample_rate)
+        w.writeframes((x * 32767).astype(np.int16).tobytes())
+
+
 def _espeak_tts(text, raw_path):
     subprocess.check_call(["espeak-ng", "-v", "ko", "-s", "180", "-p", "45",
                            "-w", raw_path, text])
 
 
-VOICE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "voice")
+ROOT = os.path.dirname(os.path.abspath(__file__))
+VOICE_DIR = os.path.join(ROOT, "assets", "voice")
 AUDIO_EXT = (".wav", ".mp3", ".m4a", ".aac", ".ogg", ".flac")
 
 
@@ -146,6 +180,8 @@ def generate(build_dir, engine="auto"):
     elif engine == "google":
         print(f"[narration] Google voice = {_google_pick_voice()}")
     elif engine == "auto":
+        use = "supertonic"
+    elif engine == "auto-openai":
         try:
             _openai_tts(LINES[0], os.path.join(build_dir, "probe.wav"))
             use = "openai"
@@ -160,7 +196,7 @@ def generate(build_dir, engine="auto"):
         if use == "files":
             raw = files[i]
         else:
-            {"openai": _openai_tts, "google": _google_tts}.get(use, _espeak_tts)(line, raw)
+            {"openai": _openai_tts, "google": _google_tts, "supertonic": _supertonic_tts}.get(use, _espeak_tts)(line, raw)
         # 앞뒤 무음 제거 + 보이스 EQ/컴프레션 (방송 톤)
         af = ("silenceremove=start_periods=1:start_threshold=-45dB,"
               "areverse,silenceremove=start_periods=1:start_threshold=-45dB,areverse,"
