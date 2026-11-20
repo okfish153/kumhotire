@@ -49,7 +49,7 @@ BUILD = os.path.join(ROOT, "build", "grandeur3")
 OUT = os.path.join(ROOT, "output")
 OUT_NAME = "grandeur40_03_new_grandeur"
 PHOTO_PATH = os.path.join(ROOT, "assets", "images", "grandeur_lx.jpg")
-PHOTO_CREDIT = ""      # 예: '사진: "Hyundai Grandeur V6 3.0 LX black (2)" by Damian B Oh · CC BY-SA 4.0 · Wikimedia Commons (크롭)'
+PHOTO_CREDIT = "사진: Wikimedia Commons · 저작자·라이선스는 설명란 참고 (크롭)"
 FPS = 30
 TOTAL = 30.0
 TEMPO = 1.08
@@ -78,26 +78,73 @@ def has_photo():
     return os.path.exists(PHOTO_PATH)
 
 
+MAIN_BOX = (70, 0, 1280, 711)        # 왼쪽 위 다른 차량을 대부분 뺀 영역
+
+
 @lru_cache(None)
 def photo():
-    return ImageEnhance.Color(Image.open(PHOTO_PATH).convert("RGB")).enhance(1.05).convert("RGBA")
+    return ImageEnhance.Color(Image.open(PHOTO_PATH).convert("RGB")).enhance(1.06).convert("RGBA")
 
 
-def photo_card(zoom=1.0, fx=0.5, fy=0.5):
-    inner = cover(photo(), CARD_W, CARD_H, zoom, fx, fy)
+def cover_box(box_, zoom, fx, fy, w=CARD_W, h=CARD_H):
+    """video.cover 와 같은 계산으로, 원본에서 잘라낼 영역(l, t, cw, ch)을 돌려줌"""
+    bl, bt, br, bb = box_
+    bw, bh = br - bl, bb - bt
+    s = max(w / bw, h / bh) * zoom
+    cw, ch = w / s, h / s
+    l = bl + clamp(fx * bw - cw / 2, 0, bw - cw)
+    t = bt + clamp(fy * bh - ch / 2, 0, bh - ch)
+    return l, t, cw, ch
+
+
+def photo_card(zoom=1.0, fx=0.6, fy=0.5, box_=MAIN_BOX):
+    inner = cover(photo(), CARD_W, CARD_H, zoom, fx, fy, box_)
     inner.putalpha(card_mask())
     return inner
+
+
+def src_to_screen(x, y, zoom, fx, fy, box_=MAIN_BOX, dx=0, dy=0):
+    l, t, cw, ch = cover_box(box_, zoom, fx, fy)
+    return (W / 2 - CARD_W / 2 + (x - l) * CARD_W / cw + dx, CARD_Y - CARD_H / 2 + (y - t) * CARD_H / ch + dy)
+
+
+def put_photo(c, zoom=1.0, fx=0.6, fy=0.5, box_=MAIN_BOX, dx=0, dy=0, alpha=1.0):
+    paste(c, card_shadow(), W / 2 + dx, CARD_Y + dy, 1, 0, 0.9 * alpha)
+    paste(c, photo_card(zoom, fx, fy, box_), W / 2 + dx, CARD_Y + dy, 1, 0, alpha)
+
+
+@lru_cache(None)
+def polaroid(name, w=380, rot=0, box_=None):
+    im = Image.open(os.path.join(ROOT, "assets", "images", name)).convert("RGBA")
+    if name == "grandeur_l_rear_sim1992.jpg":      # 1편과 같은 번호판 흐림
+        plate = (338, 618, 535, 760)
+        im.paste(im.crop(plate).filter(ImageFilter.GaussianBlur(16)), plate[:2])
+    if box_:
+        im = im.crop(box_)
+    h = int(im.height * w / im.width)
+    im = im.resize((w, h), Image.LANCZOS)
+    pad, bottom = 14, 40
+    fr = Image.new("RGBA", (w + pad * 2, h + pad + bottom), (250, 248, 242, 255))
+    fr.alpha_composite(im, (pad, pad))
+    sh = Image.new("RGBA", (fr.width + 40, fr.height + 40), (0, 0, 0, 0))
+    ImageDraw.Draw(sh).rectangle((24, 28, 24 + fr.width, 28 + fr.height), fill=(0, 0, 0, 140))
+    sh = sh.filter(ImageFilter.GaussianBlur(10))
+    sh.alpha_composite(fr, (20, 20))
+    return sh.rotate(rot, Image.BICUBIC, expand=True)
 
 
 # ------------------------------------------------------------------ 배경
 @lru_cache(None)
 def bg():
+    if has_photo():
+        im = cover(photo(), W, H, 1.0, 0.6, 0.5, MAIN_BOX).filter(ImageFilter.GaussianBlur(40))
+        return ImageEnhance.Brightness(im).enhance(0.34)
     a = np.linspace(0, 1, H)[:, None, None]
     arr = (np.array((34, 44, 66)) * (1 - a) + np.array((10, 12, 18)) * a) * np.ones((1, W, 1))
     im = Image.fromarray(arr.astype(np.uint8), "RGB").convert("RGBA")
     lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     g = ImageDraw.Draw(lay)
-    for k in range(-H, W, 90):          # 아주 옅은 사선 무늬
+    for k in range(-H, W, 90):
         g.line((k, H, k + H * 0.6, 0), fill=(255, 255, 255, 8), width=26)
     im.alpha_composite(lay)
     return im
@@ -197,18 +244,31 @@ def subtitle(c, t):
 OPTS = [("1", "1,690만 원"), ("2", "2,490만 원"), ("3", "3,490만 원")]
 
 
+def credit_line(c, a=1.0):
+    if PHOTO_CREDIT:
+        paste(c, small(PHOTO_CREDIT, 22, (225, 225, 225)), W / 2, 1362, 1, 0, a)
+
+
+def ring(c, x, y, r, p, width=10, color=YEL):
+    if p <= 0:
+        return
+    lay = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    ImageDraw.Draw(lay).arc((x - r, y - r, x + r, y + r), -90, -90 + 360 * p, fill=color + (255,), width=width)
+    c.alpha_composite(lay)
+
+
 def s1(c, t, t0):
     lt = t - t0
-    card_or_graphic(c, t, lt, dur=3.0, dy=-40 if not has_photo() else 0, label=False)
-    if not has_photo():
-        paste(c, small("설명용 그래픽 · 실제 차량 사진 아님"), W / 2, CARD_Y - 380)
-    # 물음표
+    put_photo(c, 1.0 + 0.08 * in_out(prog(lt, 0, 2.6)), 0.6, 0.5)
+    shade_card = G.shade_card
+    shade_card(c, 0.42 * prog(lt, 0.6, 0.3))
     pq = out_back(prog(lt, 0.1, 0.35))
-    paste(c, text_img("?", 230, YEL, "Black", stroke=8, sfill=(0, 0, 0), shadow=6), 880, 600,
+    paste(c, text_img("?", 230, YEL, "Black", stroke=8, sfill=(0, 0, 0), shadow=6), 870, 620,
           pq, 8 * math.sin(lt * 6), clamp(pq * 1.5))
     for k, (no, txt) in enumerate(OPTS):
         pk = out_back(prog(lt, 0.7 + 0.35 * k, 0.3))
-        paste(c, option_chip(no, txt), W / 2 + 120, 990 + k * 130, pk * 0.92, 0, clamp(pk * 1.4))
+        paste(c, option_chip(no, txt), W / 2 + 120, 930 + k * 140, pk * 0.92, 0, clamp(pk * 1.4))
+    credit_line(c)
     key_caption(c, "각이 사라진 *새 그랜저*, 얼마?", t0 + 0.1, t0 + 9, t, size=84)
 
 
@@ -216,9 +276,10 @@ def s2(c, t, t0):
     lt = t - t0
     hit = t0 + 0.45
     dx, dy = jolt(t, hit, 22)
-    panel(c, (40, 30, 26))
+    put_photo(c, 1.08, 0.6, 0.5, dx=dx, dy=dy)
+    G.shade_card(c, 0.66)
     for k, (no, txt) in enumerate(OPTS[:2]):
-        paste(c, option_chip(no, txt, 2), W / 2 + 120, 990 + k * 130, 0.92, 0, 1 - prog(lt, 0, 0.25))
+        paste(c, option_chip(no, txt, 2), W / 2 + 120, 930 + k * 140, 0.92, 0, 1 - prog(lt, 0, 0.25))
     if t < hit:
         val = int(34_900_000 * out_cubic(clamp(lt / 0.45)) + np.random.default_rng(int(t * 60)).integers(0, 9999))
         txt, sc = f"{val // 10000:,}만 원", 1.0
@@ -227,53 +288,62 @@ def s2(c, t, t0):
     paste(c, text_img(txt, 170, YEL if t >= hit else WHITE, "Black", stroke=6, sfill=(0, 0, 0), shadow=10),
           W / 2 + dx, 820 + dy, sc)
     if t >= hit:
-        paste(c, text_img("1992년 9월 · 3.0 골드", 60, CREAM, "Bold", shadow=4), W / 2, 960, 1, 0, prog(t, hit, 0.3))
+        paste(c, text_img("1992년 9월 · 3.0 골드", 60, CREAM, "Bold", stroke=4, sfill=(0, 0, 0), shadow=4),
+              W / 2, 960, 1, 0, prog(t, hit, 0.3))
         ps = prog(t, hit + 0.15, 0.18)
         paste(c, stamp("정답", 92), W / 2 + 300, 1110, 2.2 - 1.2 * ps, 0, clamp(ps * 3))
-        paste(c, small("3.0 소시알 2,590만 원 ~ 3.0 골드 3,490만 원 · 한국일보 1992.9.17 보도"), W / 2, 1290, 1, 0,
-              prog(t, hit + 0.3, 0.3))
+        paste(c, small("3.0 소시알 2,590만 원 ~ 3.0 골드 3,490만 원 · 한국일보 1992.9.17 보도", 26, (235, 230, 220)),
+              W / 2, 1290, 1, 0, prog(t, hit + 0.3, 0.3))
+    credit_line(c)
     key_caption(c, "최고급 *3,490만 원!*", hit, t0 + 9, t, size=92)
 
 
 def s3(c, t, t0):
     lt = t - t0
     panel(c, (30, 30, 36))
-    base = 1180
-    for k, (yr, name, val, col) in enumerate([("1986", "각그랜저 초기", 1690, (150, 150, 160)),
-                                              ("1992", "뉴 그랜저 3.0 골드", 3490, AMBER)]):
-        x = W / 2 - 200 + k * 400
-        hh = 600 * val / 3490 * out_cubic(prog(lt, 0.1 + 0.35 * k, 0.6))
-        ImageDraw.Draw(c).rounded_rectangle((x - 110, base - hh, x + 110, base), 18, fill=col)
+    base, maxh = 1170, 420
+    items = [("1986", "각그랜저 초기", 1690, (150, 150, 160), ("grandeur_l_rear_sim1992.jpg", (200, 40, 1282, 840)), -6),
+             ("1992", "뉴 그랜저 3.0 골드", 3490, AMBER, ("grandeur_lx.jpg", (300, 0, 1280, 711)), 5)]
+    for k, (yr, name, val, col, (img, bx), rot) in enumerate(items):
+        x = W / 2 - 210 + k * 420
+        hh = maxh * val / 3490 * out_cubic(prog(lt, 0.1 + 0.35 * k, 0.6))
+        ImageDraw.Draw(c).rounded_rectangle((x - 105, base - hh, x + 105, base), 18, fill=col)
+        pp = out_back(prog(lt, 0.1 + 0.35 * k, 0.35))
+        top = base - maxh * val / 3490
+        paste(c, polaroid(img, 300, rot, bx), x, top - 120, 0.6 + 0.4 * pp, 0, clamp(pp * 1.5))
         if hh > 5:
-            paste(c, text_img(f"{val:,}만", 54, WHITE, "Black", stroke=5, sfill=(0, 0, 0), shadow=3), x, base - hh - 45)
+            paste(c, text_img(f"{val:,}만", 50, WHITE, "Black", stroke=5, sfill=(0, 0, 0), shadow=3), x, base - hh / 2)
         paste(c, text_img(yr, 44, WHITE, "Black", shadow=0), x, base + 40)
         paste(c, small(name, 30, CREAM), x, base + 86)
     ps = prog(lt, 1.1, 0.16)
     if ps > 0:
-        paste(c, stamp("2배+", 120, RED, rot=-10), W / 2 - 200, 610, 2.2 - 1.2 * ps, 0, clamp(ps * 3))
+        paste(c, stamp("2배+", 110, RED, rot=-10), W / 2, 1010, (2.2 - 1.2 * ps) * 0.8, 0, clamp(ps * 3))
     paste(c, small("1,690만 원: 오토뷰 보도 · 3,490 ÷ 1,690 ≈ 2.07배"), W / 2, 1335, 1, 0, prog(lt, 0.5, 0.3))
     key_caption(c, "각그랜저의 *두 배*가 넘었다", t0 + 0.1, t0 + 9, t, size=88)
 
 
 @lru_cache(None)
 def morph(r):
-    s = 220
+    s = 180
     im = Image.new("RGBA", (s + 30, s + 30), (0, 0, 0, 0))
-    ImageDraw.Draw(im).rounded_rectangle((15, 15, 15 + s, 15 + s), r, outline=YEL, width=14)
+    ImageDraw.Draw(im).rounded_rectangle((15, 15, 15 + s, 15 + s), r, outline=YEL, width=12)
     return im
 
 
 def s4(c, t, t0):
     lt = t - t0
-    panel(c, NAVY)
-    # 1) 네모 → 둥근 모양
-    r = int(110 * in_out(prog(lt, 0.2, 0.8)))
-    a1 = 1 - prog(lt, 1.6, 0.3)
-    paste(c, morph(r // 5 * 5), W / 2, 760, 1, 0, a1)
-    paste(c, text_img("직선" if r < 55 else "곡선", 70, YEL, "Black", shadow=3), W / 2, 760, 1, 0, a1)
-    # 2) 측면 그래픽 + 줄자
-    a2 = prog(lt, 1.6, 0.3)
-    if a2 > 0:
+    if lt < 1.8:
+        # 실차의 둥근 헤드램프·펜더 곡선 클로즈업 + 네모→곡선 아이콘
+        z = 2.0 + 0.15 * prog(lt, 0, 1.8)
+        put_photo(c, z, 0.55, 0.62)
+        r = int(90 * in_out(prog(lt, 0.2, 0.8)))
+        badge = compose((box(260, 260, 40, (0, 0, 0, 170), shadow=False), 0, 0), (morph(r // 5 * 5), 0, -18),
+                        (text_img("직선" if r < 45 else "곡선", 44, YEL, "Black", shadow=0), 0, 92))
+        paste(c, badge, 220, 640, 1, 0, clamp(lt * 4))
+        credit_line(c)
+    else:
+        panel(c, NAVY)
+        a2 = prog(lt, 1.8, 0.25)
         paste(c, side_car(), W / 2, 780, 0.92, 0, a2)
         L_ = out_cubic(prog(lt, 1.9, 1.3))
         x0, x1, y = 70, 70 + 940 * L_, 1060
@@ -287,59 +357,59 @@ def s4(c, t, t0):
         ps = prog(lt, 3.3, 0.16)
         if ps > 0:
             paste(c, stamp("5m - 2cm!", 92, RED, rot=-7), W / 2 + 180, 1200, 2.0 - 1.0 * ps, 0, clamp(ps * 3))
-        paste(c, small("전장 4,980mm · 현대자동차 헤리티지 · 설명용 그래픽"), W / 2, 1335, 1, 0, a2)
+        paste(c, small("전장 4,980mm · 현대자동차 헤리티지 · 측면은 설명용 그래픽"), W / 2, 1335, 1, 0, a2)
     key_caption(c, "직선 대신 *둥근 곡선*", t0 + 0.1, t0 + 1.8, t)
     key_caption(c, "길이 *5m에서 2cm* 모자라", t0 + 1.8, t0 + 9, t)
 
 
+B_VIEW = dict(zoom=1.0, fx=0.5, fy=0.5, box_=(40, 10, 360, 300))
+
+
 def s5(c, t, t0):
     lt = t - t0
-    panel(c, NAVY)
-    b = in_out(prog(lt, 0.6, 0.6))
-    paste(c, side_car(round(b * 6) / 6), W / 2, 880, 0.98)
-    # B필러 위치 표시
-    bx, by = W / 2 + (565 - 500) * 0.98, 880 + (228 - 280) * 0.98
+    z = 1.0 + 0.06 * prog(lt, 0, 2.5)
+    v = dict(B_VIEW, zoom=z)
+    put_photo(c, **v)
+    bx, by = src_to_screen(200, 120, **v)
     p = out_back(prog(lt, 0.3, 0.3))
     if p > 0:
-        paste(c, text_img("B필러", 52, YEL, "Black", stroke=5, sfill=(0, 0, 0), shadow=3), bx, by - 200, p, 0, clamp(p * 1.5))
+        paste(c, text_img("까만 B필러", 54, YEL, "Black", stroke=5, sfill=(0, 0, 0), shadow=3), bx + 60, by - 240, p, 0, clamp(p * 1.5))
         d = ImageDraw.Draw(c)
-        d.line((bx, by - 160, bx, by - 50), fill=YEL, width=8)
-        d.polygon([(bx - 18, by - 64), (bx + 18, by - 64), (bx, by - 36)], fill=YEL)
-    pl = prog(lt, 1.3, 0.5)
-    if pl > 0:   # 창이 길게 이어지는 화살표
+        d.line((bx, by - 200, bx, by - 50), fill=YEL, width=9)
+        d.polygon([(bx - 20, by - 66), (bx + 20, by - 66), (bx, by - 34)], fill=YEL)
+    pl = prog(lt, 1.1, 0.6)
+    if pl > 0:   # 앞뒤 창이 하나로 이어져 보이는 화살표
+        xa, ya = src_to_screen(105, 225, **v)
+        xb, yb = src_to_screen(300, 210, **v)
         d = ImageDraw.Draw(c)
-        y = by + 110
-        xa, xb = W / 2 + (405 - 500) * 0.98, W / 2 + (730 - 500) * 0.98
-        d.line((xa, y, xa + (xb - xa) * pl, y), fill=WHITE, width=8)
+        xe, ye = xa + (xb - xa) * pl, ya + (yb - ya) * pl
+        d.line((xa, ya, xe, ye), fill=WHITE, width=10)
         if pl >= 1:
-            d.polygon([(xb, y - 18), (xb, y + 18), (xb + 30, y)], fill=WHITE)
-    paste(c, small("블랙 B필러로 길게 이어지는 차체 · 현대자동차그룹 · 설명용 그래픽"), W / 2, 1335)
+            d.polygon([(xb, yb - 22), (xb, yb + 22), (xb + 36, yb)], fill=WHITE)
+        pk = out_back(prog(lt, 1.7, 0.3))
+        tag = compose((box(470, 100, 50, (250, 246, 236), INK, 4, True), 0, 0),
+                      (text_img("창이 하나처럼 쭉~", 48, INK, "Black", shadow=0), 0, -3))
+        paste(c, tag, W / 2 + 120, 1190, pk, -3, clamp(pk * 1.5))
+    credit_line(c)
     key_caption(c, "*까만 B필러* = 길어 보이는 창", t0 + 0.1, t0 + 9, t, size=84)
 
 
-@lru_cache(None)
-def emblem(p):
-    """타원 테두리가 그려지고 H 글자가 나타나는 단순 그래픽 (실제 로고 아님)"""
-    w, h = 520, 330
-    im = Image.new("RGBA", (w + 40, h + 40), (0, 0, 0, 0))
-    g = ImageDraw.Draw(im)
-    g.arc((20, 20, 20 + w, 20 + h), -90, -90 + 360 * p, fill=(225, 230, 240), width=22)
-    if p >= 1:
-        t = text_img("H", 230, (225, 230, 240), "Black", shadow=0)
-        im.alpha_composite(t, ((im.width - t.width) // 2, (im.height - t.height) // 2 - 8))
-    return im
+E_VIEW = dict(fx=0.5, fy=0.5, box_=(800, 215, 1100, 470))
 
 
 def s6(c, t, t0):
     lt = t - t0
-    panel(c, (22, 26, 36))
-    p = out_cubic(prog(lt, 0.2, 0.8))
-    paste(c, emblem(round(p * 20) / 20), W / 2, 820, 1.0 + 0.05 * math.sin(lt * 3))
-    pk = out_back(prog(lt, 1.2, 0.3))
+    z = 1.0 + 0.10 * in_out(prog(lt, 0, 3.0))
+    v = dict(E_VIEW, zoom=z)
+    put_photo(c, **v)
+    ex, ey = src_to_screen(948, 316, **v)
+    ring(c, ex, ey, 120 + 6 * math.sin(lt * 8), out_cubic(prog(lt, 0.3, 0.6)), 12)
+    pk = out_back(prog(lt, 1.1, 0.3))
     tag = compose((box(560, 110, 55, YEL, INK, 5, True), 0, 0),
                   (text_img("2세대 그랜저부터!", 56, INK, "Black", shadow=0), 0, -3))
-    paste(c, tag, W / 2, 1120, pk, -3, clamp(pk * 1.5))
-    paste(c, small("타원형 H 엠블럼 · 현대자동차그룹 · 단순화한 설명용 그래픽"), W / 2, 1335)
+    paste(c, tag, W / 2, 1180, pk, -3, clamp(pk * 1.5))
+    paste(c, small("타원형 H 엠블럼 · 현대자동차그룹 스토리", 26, (235, 230, 220)), W / 2, 1290)
+    credit_line(c)
     key_caption(c, "타원형 *H 엠블럼*의 시작", t0 + 0.1, t0 + 9, t)
 
 
@@ -359,38 +429,44 @@ def gauge(c, cx, cy, r, v, vmax=250):
 def s7(c, t, t0):
     lt = t - t0
     panel(c, (34, 28, 26))
-    paste(c, text_img("1994", 90, CREAM, "Black", shadow=4), W / 2, 590, 1, 0, clamp(lt * 4))
+    pp = out_back(prog(lt, 0.05, 0.35))
+    paste(c, polaroid("grandeur_lx_black_rear_thumb.jpg", 360, -6), 300, 650, 0.6 + 0.4 * pp, 0, clamp(pp * 1.5))
+    paste(c, text_img("1994", 110, CREAM, "Black", shadow=4), 770, 640, 1, 0, clamp(lt * 4))
     v = 225 * out_cubic(prog(lt, 0.3, 1.2)) + (3 * math.sin(lt * 40) if lt > 1.5 else 0)
-    gauge(c, W / 2, 960, 300, v)
-    paste(c, text_img(f"V6 3.5 · {int(min(v, 225))}마력", 64, WHITE, "Black", stroke=5, sfill=(0, 0, 0), shadow=3),
-          W / 2, 1020)
+    gauge(c, W / 2, 1060, 270, v)
+    paste(c, text_img(f"V6 3.5 · {int(min(v, 225))}마력", 60, WHITE, "Black", stroke=5, sfill=(0, 0, 0), shadow=3),
+          W / 2, 1115)
     ps = out_back(prog(lt, 2.2, 0.3))
     if ps > 0:
         tag = compose((box(640, 130, 30, RED, CREAM, 5, True), 0, 0),
                       (text_img("4,380만 원 육박!", 72, WHITE, "Black", shadow=0), 0, -4))
-        paste(c, tag, W / 2, 1180, ps, -2, clamp(ps * 1.5))
+        paste(c, tag, W / 2, 1230, ps, -2, clamp(ps * 1.5))
     paste(c, small("1994년 6월 V6 3.5(225마력) 추가 · 오토뷰 보도"), W / 2, 1335)
     key_caption(c, "*V6 3.5* 등장", t0 + 0.1, t0 + 9, t, size=96)
 
 
 def s8(c, t, t0):
     lt = t - t0
-    i_next = 8
-    t_next = L(i_next)[0] - 0.15
+    t_next = L(8)[0] - 0.15
     a = 1 - prog(t, t_next - 0.3, 0.3)
     if a > 0:
         hit = t0 + 0.75
         dx, dy = jolt(t, hit, 22)
-        card_or_graphic(c, t, lt, dur=2.0, dx=dx, dy=dy, label=False)
+        put_photo(c, 1.0 + 0.05 * prog(lt, 0, 2.0), 0.6, 0.5, dx=dx, dy=dy, alpha=a)
+        for k, (img, x, y, r) in enumerate([("grandeur_lx_black_front_thumb.jpg", 250, 610, -8),
+                                            ("grandeur_lx_green_rear_thumb.jpg", 830, 1180, 7)]):
+            pk = out_back(prog(lt, 0.2 + 0.2 * k, 0.3))
+            paste(c, polaroid(img, 300, r), x, y, 0.6 + 0.4 * pk, 0, clamp(pk * 1.5) * a)
         ps = prog(t, hit, 0.16)
         if ps > 0:
             paste(c, stamp("회장님 차", 130, RED, rot=-9), W / 2 + dx, 900 + dy, 2.4 - 1.4 * ps, 0, clamp(ps * 3) * a)
+        credit_line(c, a)
         key_caption(c, "더 크고 더 둥근 *회장님 차*", t0 + 0.1, t_next, t, size=86)
     if t >= t_next - 0.3:
         b = prog(t, t_next - 0.3, 0.3)
         c.alpha_composite(Image.new("RGBA", (W, H), (14, 14, 18, int(235 * b))))
-        rows = [("2/8", "1세대 각그랜저  ✓", 0), ("3/8", "2세대 뉴 그랜저  ✓", 1), ("4/8", "3세대 그랜저 XG", 2)]
-        for k, (no, name, st) in enumerate(rows):
+        rows = [("2/8", "1세대 각그랜저  ✓"), ("3/8", "2세대 뉴 그랜저  ✓"), ("4/8", "3세대 그랜저 XG")]
+        for k, (no, name) in enumerate(rows):
             pk = out_cubic(prog(t, t_next + 0.12 * k, 0.3))
             hi = k == 1
             bx = box(820, 116, 26, AMBER if hi else (44, 44, 52), None, 0, False)
