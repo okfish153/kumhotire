@@ -1,5 +1,7 @@
 # 차형 캐릭터 설정서 v2 (상품화 고려)
 
+**확정 기준 그림:** `assets/character/chahyung_base.png` (배경 제거본) · 원본 `assets/character/chahyung_base_raw.png`
+
 채널: **차를 읽는 시간** · 캐릭터: **차형**
 
 ## 1. 설계 원칙
