@@ -32,7 +32,7 @@ CUT_ARGS = ["--no-clap", "--tempo", "1.15", "--gap", "0.3", "--inner-pause", "0.
 TITLE = ("짜장면 *28,000그릇* 값?", "지금 짜장면 값으론 *2억!*")
 FPS = 30
 TAIL = 0.35
-CHAR_PATH = os.path.join(ROOT, "assets", "character", "chahyung_base.png")
+CHAR_PATH = os.path.join(ROOT, "assets", "character", "chahyung_v3_base.png")
 OPERA = (1040, 205)          # 원본 사진에서 오페라 글라스(C필러 작은 창) 중심
 
 # 문장별 아래 자막 조각 (*노란 강조*)

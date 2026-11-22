@@ -8,14 +8,14 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "assets", "character", "chahyung_base.png")
+SRC = os.path.join(ROOT, "assets", "character", "chahyung_v3_base.png")
 OUT = os.path.join(ROOT, "assets", "character", "ip", "chahyung_vector_draft.svg")
 SCALE = 0.5          # 작업 해상도 (원본의 절반)
 TOL = 0.9            # 경로 단순화 허용 오차 (작업 픽셀)
 MIN_AREA = 6         # 이보다 작은 조각은 버림
 # 칠하는 순서 = 아래에서 위로. 외곽선(검정)은 맨 위.
-PALETTE = [("white", "#FFFDF8"), ("pink", "#F8B4A6"), ("beige", "#D8C3A0"),
-           ("navy", "#1F3A5F"), ("amber", "#F5A623"), ("line", "#1E1E1E")]
+PALETTE = [("white", "#FFFDF8"), ("pink", "#FAB4BC"), ("gray", "#8A8A8A"), ("red", "#DC2B2C"),
+           ("amber", "#F5A623"), ("panel", "#2C2C2C"), ("line", "#1E1E1E")]
 
 
 def hex2rgb(h):
