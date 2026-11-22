@@ -148,6 +148,9 @@ class Chahyung:
         elif motion == "nod":
             p["head_rot"] = 0
             p["head_dy"] = -10 * abs(math.sin(t * 6))
+        if motion != "talk" and e > 0:              # 어떤 동작이든 말하는 동안은 머리가 살짝 들썩
+            p["head_rot"] += 2.5 * e * math.sin(t * 9)
+            p["head_dy"] += 4 * e * abs(math.sin(t * 11))
         return p
 
     # ------------------------------------------------------------ 그리기
@@ -215,8 +218,8 @@ class Chahyung:
                             (x, y + r), (x - r * 0.3, y + r * 0.3), (x - r, y), (x - r * 0.3, y - r * 0.3)]
                     d.polygon(star, fill=(255, 212, 0), outline=INK)
         if "arrow" in fx:
-            ay = foot[1] - 40 + 18 * abs(math.sin(t * 8))
-            ax = cx + self.W * 0.45
+            ay = foot[1] - fh * 0.45 + 18 * abs(math.sin(t * 8))
+            ax = cx - self.W * 0.62
             d.polygon([(ax - 34, ay - 60), (ax + 34, ay - 60), (ax + 34, ay), (ax + 62, ay), (ax, ay + 60),
                        (ax - 62, ay), (ax - 34, ay)], fill=(255, 212, 0), outline=INK)
             d.line([(ax - 34, ay - 60), (ax + 34, ay - 60), (ax + 34, ay), (ax + 62, ay), (ax, ay + 60),

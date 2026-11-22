@@ -16,6 +16,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 import audio as A
+from tools.chahyung_motion import Chahyung
 import ep_grandeur2 as G
 from ep_grandeur2 import (CREAM, AMBER, RED, INK, CARD_W, CARD_H, CARD_Y, MAIN_BOX, photo, card, put_card,
                           shade_card, memo_card, option_chip, stamp, bowl, won_bill, rich_img, jolt,
@@ -74,7 +75,13 @@ def load_timeline():
             acc += d
     voice = A.read_wav(wav)
     total = round(len(voice) / A.SR + TAIL, 2)
-    TL.update(lines=lines, chunks=chunks, total=total)
+    hop = A.SR // FPS
+    n = int(total * FPS) + 1
+    rms = np.array([np.sqrt(np.mean(voice[i * hop:(i + 1) * hop] ** 2)) if i * hop < len(voice) else 0.0
+                    for i in range(n)])
+    rms = np.convolve(rms, np.ones(3) / 3, mode="same")
+    energy = np.clip(rms / (np.percentile(rms[rms > 0], 95) + 1e-9), 0, 1).round(3).tolist()
+    TL.update(lines=lines, chunks=chunks, total=total, energy=energy)
     return voice
 
 
@@ -135,14 +142,6 @@ def ring(d=300, color=YEL, width=12):
 
 
 @lru_cache(None)
-def chahyung(h=300):
-    im = Image.open(CHAR_PATH).convert("RGBA")
-    bb = im.getbbox()
-    im = im.crop(bb)
-    return im.resize((int(im.width * h / im.height), h), Image.LANCZOS)
-
-
-@lru_cache(None)
 def bubble(txt, w=760):
     b = box(w, 170, 60, (250, 246, 236), INK, 6, True)
     tail = Image.new("RGBA", (90, 70), (0, 0, 0, 0))
@@ -161,16 +160,27 @@ def caption(c, t):
             return
 
 
+# 문장별 차형 움직임 (tools/chahyung_motion.py, 기준 그림 한 장을 움직임)
+MOTIONS = ["shock", "nod", "cheer", "secret", "think", "jump", "nod", "awkward", "key_spin", "nod",
+           "cheer", "point_down", "talk"]
+CHAR_H, CHAR_X, CHAR_FOOT = 300, 950, 1405      # 키, 발 가운데 x, 발 y (예전 위치와 같음)
+
+
+@lru_cache(None)
+def rig():
+    return Chahyung(height=CHAR_H)
+
+
 def char_react(c, t):
-    """오른쪽 아래 구석의 차형. 반응 순간 통통 튐."""
-    p = 1.0                                     # 처음부터 계속 (반복 재생 때 끊기지 않게)
-    hop = 0.0
-    for i in (2, 6, 8, 10, 12):
-        q = prog(t, Ls(i) + 0.05, 0.35)
-        if 0 < q < 1:
-            hop = max(hop, math.sin(q * math.pi) * 38)
-    bob = 4 * math.sin(t * 3.2)
-    paste(c, chahyung(), 950, 1255 - hop + bob + 60 * (1 - p), 1.0, -4 * math.sin(t * 1.7), clamp(p * 2))
+    """오른쪽 아래 구석의 차형: 문장마다 정한 동작 + 말소리에 맞춰 머리 들썩."""
+    k = 0
+    for i in range(len(TL["lines"])):
+        if t >= Ls(i + 1) - 0.05:
+            k = i
+    e = TL["energy"][min(len(TL["energy"]) - 1, int(t * FPS))] if TL.get("energy") else 0.0
+    im = rig().frame(MOTIONS[k], max(0.0, t - Ls(k + 1)), e)
+    ch = rig()
+    c.alpha_composite(im, (int(CHAR_X - im.width / 2), int(CHAR_FOOT - (im.height - ch.pad))))
 
 
 def photo_credit(c):
