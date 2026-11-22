@@ -7,8 +7,9 @@
 처리 순서
 1. ffmpeg로 44.1kHz 모노로 읽는다.
 2. 손뼉 찾기: 10ms 단위로 2kHz 위 대역 에너지를 보고, 갑자기 크게 튀고(직전보다 +18dB)
-   고역 비율이 높으며 0.3초 안에 끝나는 소리를 손뼉으로 본다. 말소리는 에너지가 대부분
-   1kHz 아래라 고역 비율이 낮다.
+   고역 비율이 높으며 0.3초 안에 끝나는 소리를 찾는다. 말소리 속 센 자음·입소리와 헷갈리지
+   않도록 소리 전체의 중심 주파수가 1.5kHz 이상이고, 앞 0.15초와 뒤 0.25초가 조용할(-40dBFS
+   미만) 때만 손뼉으로 본다. 손뼉을 안 쳤으면 --no-clap으로 끈다.
 3. 손뼉 구간을 뺀 나머지에서 말소리 조각을 찾고, 쉼이 --sentence-gap(기본 1.0초) 이상이거나
    사이에 손뼉이 있으면 다른 문장으로 나눈다.
 4. 손뼉마다 그 직전 문장 하나를 버린다(연속으로 틀려도 손뼉 수만큼 하나씩).
@@ -63,7 +64,15 @@ def frame_feats(x):
     return rms_db, hf_db, ratio
 
 
-def find_claps(rms_db, hf_db, ratio, min_level=-35.0, jump=18.0, min_ratio=0.25, max_len=0.30):
+def centroid(x, i, j):
+    seg = x[i * HOP:(j * HOP + WIN)]
+    S = np.abs(np.fft.rfft(seg * np.hanning(len(seg)))) ** 2
+    f = np.fft.rfftfreq(len(seg), 1 / SR)
+    return (S * f).sum() / (S.sum() + 1e-12)
+
+
+def find_claps(x, rms_db, hf_db, ratio, min_level=-35.0, jump=18.0, min_ratio=0.25, max_len=0.30,
+               quiet=-40.0, min_cent=1500.0):
     """손뼉 시작 프레임 목록과 [시작, 끝) 프레임 구간."""
     claps = []
     n = len(rms_db)
@@ -78,7 +87,10 @@ def find_claps(rms_db, hf_db, ratio, min_level=-35.0, jump=18.0, min_ratio=0.25,
                 j += 1
             length = (j - i) * HOP / SR
             # 말소리 위 순간 잡음과 구분: 짧고, 고역 비율이 높은 상태로 끝나야 한다
-            if length <= max_len:
+            q = int(0.15 * SR / HOP)
+            quiet_before = rms_db[max(0, i - q - 1):max(0, i - 1)].max(initial=-120) < quiet
+            quiet_after = rms_db[j + 1:j + 1 + int(0.25 * SR / HOP)].max(initial=-120) < quiet
+            if length <= max_len and quiet_before and quiet_after and centroid(x, i, j) >= min_cent:
                 claps.append((i, j))
                 i = j + 5
                 continue
@@ -121,6 +133,53 @@ def group_sentences(runs, claps, gap):
     return sents
 
 
+def atempo(seg, tempo):
+    """음 높이는 그대로, 속도만 tempo배 (ffmpeg atempo)."""
+    p = subprocess.run(["ffmpeg", "-v", "error", "-f", "f32le", "-ar", str(SR), "-ac", "1", "-i", "-",
+                        "-af", f"atempo={tempo}", "-f", "f32le", "-"], input=seg.astype(np.float32).tobytes(),
+                       capture_output=True, check=True)
+    return np.frombuffer(p.stdout, np.float32).copy()
+
+
+def align(kept, sents, syl, max_join=3, max_skip=0.6, target=4.0):
+    """조각들을 대본 문장에 순서대로 배정한다. 한 문장에 연속 조각 1~max_join개,
+    max_skip초 미만 조각은 잡음으로 건너뛸 수 있다. 초당 음절이 target에 가깝게."""
+    import math
+    from functools import lru_cache
+    N, M = len(kept), len(syl)
+    st = [sents[k][0] * HOP / SR for k in kept]
+    en = [sents[k][1] * HOP / SR for k in kept]
+    INF = float("inf")
+
+    @lru_cache(None)
+    def f(i, m):
+        if m == M:
+            return (0.0, ()) if i == N else (INF, ())
+        if i >= N:
+            return (INF, ())
+        best = (INF, ())
+        if en[i] - st[i] < max_skip:
+            v, p = f(i + 1, m)
+            best = min(best, (v + 0.3, (("skip", i),) + p))
+        for j in range(i + 1, min(N, i + max_join) + 1):
+            v, p = f(j, m + 1)
+            dur = en[j - 1] - st[i]
+            c = math.log(syl[m] / dur / target) ** 2 + 0.05 * (j - i - 1)
+            best = min(best, (v + c, (("line", i, j),) + p))
+        return best
+
+    v, path = f(0, 0)
+    if v == INF:
+        return None
+    groups, skipped = [], []
+    for step in path:
+        if step[0] == "skip":
+            skipped.append(kept[step[1]])
+        else:
+            groups.append([kept[q] for q in range(step[1], step[2])])
+    return groups, set(skipped)
+
+
 def script_lines(path):
     """대본 md의 '녹음용 대본' 표에서 대사 열을 읽는다."""
     lines = []
@@ -144,6 +203,10 @@ def main():
     ap.add_argument("--thresh", type=float, default=-38.0, help="말소리 판정 dBFS (기본 -38)")
     ap.add_argument("--sentence-gap", type=float, default=1.0, help="이 이상 쉬면 다음 문장 (기본 1.0초)")
     ap.add_argument("--gap", type=float, default=0.6, help="이어 붙일 때 문장 사이 쉼 (기본 0.6초)")
+    ap.add_argument("--no-clap", action="store_true", help="손뼉 감지를 끄고 쉼으로만 문장을 나눈다")
+    ap.add_argument("--inner-pause", type=float, default=0.35, help="문장 안 쉼의 최대 길이 (기본 0.35초)")
+    ap.add_argument("--tempo", type=float, default=1.0, help="말 속도 배율, 음 높이 유지 (예: 1.12)")
+    ap.add_argument("--limit", type=float, default=58.0, help="이 길이를 넘으면 경고 (기본 58초)")
     ap.add_argument("--pre", type=float, default=0.08)
     ap.add_argument("--post", type=float, default=0.15)
     a = ap.parse_args()
@@ -155,7 +218,7 @@ def main():
 
     x = load(a.input)
     rms_db, hf_db, ratio = frame_feats(x)
-    claps = find_claps(rms_db, hf_db, ratio)
+    claps = [] if a.no_clap else find_claps(x, rms_db, hf_db, ratio)
     mask = np.zeros(len(rms_db), bool)
     for s, e in claps:
         mask[max(0, s - 2):e + 3] = True
@@ -173,24 +236,44 @@ def main():
     expected = script_lines(a.script) if a.script else None
     n_expect = len(expected) if expected else a.expect
 
-    # 이어 붙이기
+    # 대본 문장 수와 다르면, 길이로 맞춰 본다(문장 안에서 오래 쉰 조각은 합치고, 짧은 잡음은 건너뜀)
+    groups = [[k] for k in kept]
+    skipped, aligned = [], False
+    if expected and len(kept) != len(expected):
+        res = align(kept, sents, [syllables(l) for l in expected])
+        if res:
+            groups, skipped = res
+            aligned = True
+
+    # 이어 붙이기: 문장 안의 긴 쉼은 --inner-pause로 줄이고, --tempo배로 빠르게(음 높이 유지)
     pieces, timeline, cur = [], [], 0.0
-    for i, k in enumerate(kept):
-        s, e = sents[k]
-        lo = max(0, int((s * HOP / SR - a.pre) * SR))
-        hi = min(len(x), int((e * HOP / SR + WIN / SR + a.post) * SR))
-        seg = x[lo:hi].copy()
-        fade = int(0.01 * SR)
+    fade = int(0.01 * SR)
+    for i, g in enumerate(groups):
+        s0, e0 = sents[g[0]][0], sents[g[-1]][1]
+        inner = [r for r in runs if r[0] >= s0 and r[1] <= e0]
+        parts = []
+        for j, (rs, re_) in enumerate(inner):
+            lo = int(rs * HOP - (a.pre * SR if j == 0 else 0.04 * SR))
+            hi = int(re_ * HOP + WIN + (a.post * SR if j == len(inner) - 1 else 0.04 * SR))
+            seg = x[max(0, lo):min(len(x), hi)].copy()
+            if j:
+                pause = (rs - inner[j - 1][1]) * HOP / SR
+                parts.append(np.zeros(int(min(pause, a.inner_pause) * SR), np.float32))
+            parts.append(seg)
+        seg = np.concatenate(parts)
+        if abs(a.tempo - 1) > 1e-3:
+            seg = atempo(seg, a.tempo)
         seg[:fade] *= np.linspace(0, 1, fade); seg[-fade:] *= np.linspace(1, 0, fade)
         save_wav(os.path.join(out, f"sentence_{i + 1:02d}.wav"), seg)
         d = len(seg) / SR
         timeline.append({"no": i + 1, "start": round(cur, 3), "end": round(cur + d, 3),
-                         "source": [t(s), t(e)]})
+                         "source": [t(s0), t(e0)],
+                         "line": expected[i] if expected and len(groups) == len(expected) else None})
         pieces.append(seg)
         cur += d + a.gap
     if pieces:
-        g = np.zeros(int(a.gap * SR), np.float32)
-        voice = np.concatenate(sum(([p, g] for p in pieces), [])[:-1])
+        gz = np.zeros(int(a.gap * SR), np.float32)
+        voice = np.concatenate(sum(([p, gz] for p in pieces), [])[:-1])
         save_wav(os.path.join(out, "voice_clean.wav"), voice)
         total = len(voice) / SR
     else:
@@ -198,36 +281,46 @@ def main():
 
     # 확인표
     rows, warn = [], []
+    gid = {k: i + 1 for i, g in enumerate(groups) for k in g}
     for k, (s, e) in enumerate(sents):
-        state = "버림(손뼉 앞)" if k in dropped else "사용"
+        if k in dropped:
+            state = "버림(손뼉 앞)"
+        elif k in skipped:
+            state = "건너뜀(짧은 잡음)"
+        else:
+            state = f"사용 → 대본 {gid[k]}번" if aligned else "사용"
         rows.append((k + 1, t(s), t(e), round(t(e) - t(s), 2), state))
-    if n_expect is not None and len(kept) != n_expect:
-        warn.append(f"남은 문장 {len(kept)}개 ≠ 대본 {n_expect}문장. 쉼이 짧았거나 손뼉을 못 찾았을 수 있습니다.")
+    if n_expect is not None and len(groups) != n_expect:
+        warn.append(f"남은 문장 {len(groups)}개 ≠ 대본 {n_expect}문장. 쉼이 짧았거나 손뼉을 못 찾았을 수 있습니다.")
+    if aligned:
+        warn.append("조각 수가 대본과 달라 길이로 자동으로 맞췄습니다. 문장별 파일을 들어 보고 확인해 주세요.")
     checks = []
-    if expected and len(kept) == len(expected):
-        for i, (k, line) in enumerate(zip(kept, expected)):
-            s, e = sents[k]
-            dur = t(e) - t(s)
+    if expected and len(groups) == len(expected):
+        for i, (g, line) in enumerate(zip(groups, expected)):
+            dur = t(sents[g[-1]][1]) - t(sents[g[0]][0])
             rate = syllables(line) / dur if dur > 0 else 0
-            ok = 3.0 <= rate <= 9.0
+            ok = 2.3 <= rate <= 9.0
             checks.append({"no": i + 1, "line": line, "sec": round(dur, 2), "syll_per_sec": round(rate, 1), "ok": ok})
             if not ok:
                 warn.append(f"{i + 1}번 문장 길이가 대본과 안 맞아 보입니다(초당 {rate:.1f}음절): {line}")
+    if a.limit and total > a.limit:
+        warn.append(f"이어 붙인 길이 {total:.1f}초가 {a.limit:.0f}초를 넘습니다. --tempo를 올리거나 --gap·--inner-pause를 줄이세요.")
 
     report = {"input": a.input, "claps": [t(c[0]) for c in claps],
               "sentences": [{"no": r[0], "start": r[1], "end": r[2], "state": r[4]} for r in rows],
+              "settings": {"gap": a.gap, "inner_pause": a.inner_pause, "tempo": a.tempo},
               "kept_timeline": timeline, "total_sec": round(total, 2), "checks": checks, "warnings": warn}
     json.dump(report, open(os.path.join(out, "report.json"), "w"), ensure_ascii=False, indent=1)
 
     md = [f"# 녹음 정리 결과: {os.path.basename(a.input)}", "",
-          f"- 손뼉 {len(claps)}번: " + (", ".join(f"{t(c[0])}초" for c in claps) or "없음"),
-          f"- 찾은 문장 {len(sents)}개 → 버림 {len(dropped)}개, 사용 {len(kept)}개"
+          f"- 손뼉 {len(claps)}번: " + (", ".join(f"{t(c[0])}초" for c in claps) or ("감지 끔" if a.no_clap else "없음")),
+          f"- 찾은 조각 {len(sents)}개 → 버림 {len(dropped)}개, 건너뜀 {len(skipped)}개, 문장 {len(groups)}개"
           + (f" (대본 {n_expect}문장)" if n_expect else ""),
-          f"- 이어 붙인 길이: {total:.1f}초 (문장 사이 {a.gap}초)", "",
-          "| # | 원본 시작 | 원본 끝 | 길이 | 처리 |", "|---|---|---|---|---|"]
+          f"- 이어 붙인 길이: **{total:.1f}초** (문장 사이 {a.gap}초, 문장 안 쉼 최대 {a.inner_pause}초, 속도 {a.tempo}배)", "",
+          "| 조각 | 원본 시작 | 원본 끝 | 길이 | 처리 |", "|---|---|---|---|---|"]
     md += [f"| {r[0]} | {r[1]} | {r[2]} | {r[3]} | {r[4]} |" for r in rows]
     if checks:
-        md += ["", "| 대본 # | 대사 | 길이(초) | 초당 음절 | 확인 |", "|---|---|---|---|---|"]
+        md += ["", "| 대본 # | 대사 | 원본 길이(초) | 초당 음절 | 확인 |", "|---|---|---|---|---|"]
         md += [f"| {c['no']} | {c['line']} | {c['sec']} | {c['syll_per_sec']} | {'✓' if c['ok'] else '확인 필요'} |"
                for c in checks]
     if warn:
