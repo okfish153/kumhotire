@@ -25,7 +25,8 @@ from video import (W, H, YEL, WHITE, prog, out_cubic, out_back, in_out, clamp, t
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "assets", "voice", "test", "test_take1.aac")
 BUILD = os.path.join(ROOT, "build", "voice_test")
-OUT = os.path.join(ROOT, "output", "voice_test_gak_grandeur.mp4")
+OUT = os.path.join(ROOT, "output", "voice_test_title_layout.mp4")
+TITLE = ("짜장면 *28,000그릇* 값?", "지금 짜장면 값으론 *2억!*")
 FPS = 30
 TEMPO = 1.10
 PRE, POST = 0.08, 0.14
@@ -114,10 +115,10 @@ def caption(c, t):
     for st, en, cap, cue in TL["cues"]:
         if st - 0.05 <= t < en + 0.25:
             p = out_back(prog(t, st - 0.05, 0.14), 2.2)
-            im = rich_img(cap, 72, 9)
-            if im.width > 1000:
-                im = im.resize((1000, int(im.height * 1000 / im.width)), Image.BICUBIC)
-            paste(c, im, W / 2, 1430, 0.85 + 0.15 * p, 0, clamp(p * 1.6))
+            im = rich_img(cap, 84, 10)
+            if im.width > 1040:
+                im = im.resize((1040, int(im.height * 1040 / im.width)), Image.BICUBIC)
+            paste(c, im, W / 2, 1450, 0.9 + 0.1 * p, 0, clamp(p * 1.6))
             return
 
 
@@ -127,9 +128,20 @@ def big(c, txt, t0, t, y=400, size=110, color=YEL, rot=0):
         paste(c, text_img(txt, size, color, "Black", stroke=8, sfill=(0, 0, 0), shadow=8), W / 2, y, 1.6 - 0.6 * p, rot, clamp(p * 2))
 
 
+@lru_cache(None)
+def title_band():
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 255))
+    for k, line in enumerate(TITLE):
+        tx = rich_img(line, 98, 9)
+        if tx.width > 1040:
+            tx = tx.resize((1040, int(tx.height * 1040 / tx.width)), Image.LANCZOS)
+        im.alpha_composite(tx, ((W - tx.width) // 2, 228 + k * 118 - tx.height // 2 + 40))
+    return im
+
+
 def frame(i):
     t = i / FPS
-    c = bg_photo().copy()
+    c = title_band().copy()
     s_bowls = C("bowls")[0]
     s_year = C("year")[0]
     s_quiz = C("quiz")[0]
@@ -140,8 +152,8 @@ def frame(i):
         dx, dy = jolt(t, C("hook2")[0], 16)
         z = 1.0 + 0.12 * in_out(prog(t, 0, s_bowls))
         put_card(c, card(photo(), z, 0.45, 0.55), dx=dx, dy=dy)
-        big(c, "?", 0.1, t, 640, 220, YEL, 8 * math.sin(t * 5))
-        big(c, "이 차 한 대 값 =", C("hook2")[0], t, 400, 92, WHITE)
+        big(c, "?", 0.1, t, 700, 220, YEL, 8 * math.sin(t * 5))
+        big(c, "이 차 한 대 값 =", C("hook2")[0], t, 560, 80, WHITE)
     elif t < s_year - 0.05:                         # 짜장면이 쏟아짐
         lt = t - s_bowls
         put_card(c, card(photo(), 1.12, 0.45, 0.55))
@@ -152,16 +164,16 @@ def frame(i):
             y0 = 500 + rng.random() * 800
             p = out_cubic(prog(lt, rng.random() * 1.2, 0.35))
             if p > 0:
-                paste(c, bowl(), x, 300 + (y0 - 300) * p, 1, (k * 37) % 30 - 15)
+                paste(c, bowl(), x, 500 + (y0 - 500) * p, 1, (k * 37) % 30 - 15, clamp(p * 3))
         cnt = int(28_000 * out_cubic(prog(lt, 0.2, 1.4)))
         lab = compose((box(700, 160, 30, RED, CREAM, 5, True), 0, 0),
                       (text_img(f"짜장면 {cnt:,}그릇", 84, WHITE, "Black", shadow=0), 0, -4))
         paste(c, lab, W / 2, 900, 1, -2, clamp(lt * 4))
-        big(c, "이 차 한 대 값 =", s_bowls, t, 400, 92, WHITE)
+        big(c, "이 차 한 대 값 =", s_bowls, t, 560, 80, WHITE)
     elif t < s_quiz - 0.05:                         # 1986, 600원
         lt = t - s_year
         put_card(c, card(photo(), 1.0 + 0.05 * prog(lt, 0, 3), 0.5, 0.5))
-        big(c, "1986", s_year, t, 420, 150, CREAM)
+        big(c, "1986", s_year, t, 1180, 150, CREAM)
         p = out_back(prog(t, C("memo")[0] + 0.1, 0.3))
         paste(c, memo_card(), 330, 720, 0.5 + 0.5 * p, 0, clamp(p * 1.5))
     elif t < s_rev - 0.05:                          # 퀴즈 + 카운트다운
@@ -178,9 +190,9 @@ def frame(i):
                 p = out_back(prog(t, st - 0.03, 0.15), 2.5)
                 ring = compose((box(260, 260, 130, YEL, INK, 8, True), 0, 0),
                                (text_img(n, 170, INK, "Black", shadow=0), 0, -8))
-                paste(c, ring, W / 2, 420, 1.4 - 0.4 * p, 0, clamp(p * 2) * (1 - prog(t, st + 0.45, 0.15)))
+                paste(c, ring, 820, 640, 1.4 - 0.4 * p, 0, clamp(p * 2) * (1 - prog(t, st + 0.45, 0.15)))
         if t < C("c1")[0] - 0.1:
-            big(c, "이 차 값은?", s_quiz, t, 400, 110, YEL)
+            big(c, "이 차 값은?", s_quiz, t, 800, 96, YEL)
     elif t < s_sal - 0.05:                          # 정답
         hit = s_rev + 0.05
         dx, dy = jolt(t, hit, 24)
@@ -233,7 +245,7 @@ def frame(i):
         if ps > 0:
             paste(c, stamp("짜장면 금지", 92, RED, rot=-8), W / 2, 1180, 2.2 - 1.2 * ps, 0, clamp(ps * 3))
     if t < s_sal - 0.05:
-        paste(c, credit(), W / 2, 1362)
+        paste(c, credit(), W / 2, 1360)
     caption(c, t)
     ImageDraw.Draw(c).rectangle((0, 0, int(W * t / TL["total"]), 7), fill=AMBER)
     return c.convert("RGB")
