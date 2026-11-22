@@ -28,7 +28,7 @@ def heading(x, y, t):
 # 머리말
 d.rectangle((0, 0, W, 240), fill=NAVY)
 d.text((140, 62), "차형 캐릭터 사용 가이드", font=F("Black", 104), fill=(255, 255, 255))
-d.text((1500, 98), "차를 읽는 시간 · v1 · 2026-11", font=F("SemiBold", 52), fill=AMBER)
+d.text((1501, 152), "차를 읽는 시간 · v2.1 · 2026-11", font=F("Bold", 51), fill=AMBER, anchor="ls")
 
 # 1. 기준 그림
 heading(140, 320, "기준 그림")
@@ -53,11 +53,12 @@ for i, (n, u, hx) in enumerate(cols):
 # 3. 꼭 지킬 것
 heading(X2, 1540, "꼭 지킬 것")
 rules = ["웃는 실눈 + 발그레한 볼 + 마시멜로 얼굴", "2등신 (머리 : 몸 = 1 : 1)",
-         "남색 헌팅캡, 꼭지에 앰버 단추", "앰버 자동차 열쇠고리", "굵고 일정한 검은 외곽선, 단색 채색"]
-for i, r in enumerate(rules):
-    y = 1680 + i * 118
-    d.ellipse((X2, y + 14, X2 + 44, y + 58), fill=GREEN)
-    d.text((X2 + 70, y), r, font=F("Bold", 50), fill=INK)
+         "남색 헌팅캡, 꼭지에 앰버 단추", "남색 셔츠, 가운데 여밈 선 1줄 (단추·주머니 없음)",
+         "앰버 자동차 열쇠고리 (정지: 늘어뜨림 · 동작: 검지)", "굵고 일정한 검은 외곽선, 단색 채색"]
+for i, r in enumerate(rules):  # 설정서 v2.1 기준 6개
+    cy = 1712 + i * 100
+    d.ellipse((X2 + 1, cy - 21, X2 + 43, cy + 21), fill=GREEN)
+    d.text((X2 + 71, cy), r, font=F("Bold", 46), fill=INK, anchor="lm")
 
 # 4. 실루엣 + 최소 크기
 X3 = 2420
@@ -97,6 +98,6 @@ d.text((X3, 1980), "  (흰 테두리나 앰버 원 배경을 깔기)", font=F("S
 d.line((140, 2300, W - 140, 2300), fill=(210, 205, 195), width=4)
 d.text((140, 2340), "© 차를 읽는 시간. 캐릭터 '차형'의 이름과 모습은 허락 없이 상업적으로 쓸 수 없습니다.",
        font=F("SemiBold", 40), fill=GREY)
-pg.save(os.path.join(OUT, "chahyung_style_guide.png"))
-pg.save(os.path.join(OUT, "chahyung_style_guide.pdf"), resolution=300)
+pg.save(os.path.join(OUT, "chahyung_style_guide.png"), dpi=(300, 300))
+pg.save(os.path.join(OUT, "chahyung_style_guide.pdf"), resolution=300.0, title="chahyung_style_guide_v2.1")
 print("ok")

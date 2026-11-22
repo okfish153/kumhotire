@@ -15,7 +15,8 @@
 | 2026-11-22 | 외형 고정값: 마시멜로 얼굴, 웃는 실눈, 2등신, 남색 헌팅캡 + 앰버 단추, 앰버 자동차 열쇠고리 | 사용자 지시, Claude 정리 |
 | 2026-11-22 | 색상표 6색(HEX) 지정 | 사용자 지시, Claude 정리 |
 | 2026-11-22 | 시그니처 동작(열쇠 돌리기, 잡지 펼치기), 말투(존댓말 + 수다체) | 사용자 |
-| 2026-11-22 | 성격·세계관·금지 사항 (캐릭터 바이블 v1) | Claude 초안, 사용자 확정 대기 |
+| 2026-11-22 | 성격·세계관·금지 사항 (캐릭터 바이블 v1) | Claude 초안, 사용자 확정 |
+| 2026-11-22 | 설정서 v2.1: 기준 그림에 맞춰 모자 단추를 꼭지로, 셔츠 가운데 여밈 선 1줄 허용, 열쇠고리는 정지 그림에서 늘어뜨리고 동작 그림에서 검지에 걸기. 캐릭터 바이블 v1.1에 반영 | Claude 추천(바이블 7장), 사용자 확정 |
 
 ## 3. 파일 기록
 | 날짜 (커밋) | 파일 | 만든 방법 | SHA-256 |
@@ -24,6 +25,8 @@
 | 2026-11-22 10:35 (`24d4a2e`) | `assets/character/chahyung_base.png` | 위 원본의 초록 배경 제거 (Claude, 자동 처리) | `3997c98df5ea6a3e332d2368ae127be51a615481feee9ec0bc6083eb13b02bad` |
 | 2026-11-22 | `assets/character/ip/*` | 기준 그림을 자르고 배치한 파생 이미지 (Claude, `tools/make_ip_assets.py`, `tools/make_style_guide.py`) | 커밋 기록 참고 |
 | 2026-11-22 | `assets/character/ip/chahyung_vector_draft.svg` | 기준 그림 자동 벡터 변환 초안 (Claude, `tools/vectorize_draft.py`) | 커밋 기록 참고 |
+| 2026-11-22 | `assets/character/ip/chahyung_style_guide.png` (드라이브: 차형 사용 가이드 v2.1.png) | v1 가이드 그림에서 버전 표기와 '꼭 지킬 것' 부분만 고쳐 다시 만듦 (Claude, `tools/make_style_guide.py`로 같은 결과 재현). v1 PNG(SHA-256 `c3ac7bc911a44d909754b41d9ff6a80418937277ab0fda4f45aaad41d3852e27`)는 커밋 `58ebc02`에 남아 있고, 드라이브 사본은 사용자 요청으로 휴지통 이동 | `cf620808dc5b4690103b6f6a14ebfc8176a0470861cc9a89022566027f1db8aa` |
+| 2026-11-22 | `assets/character/ip/chahyung_style_guide.pdf` (드라이브: 차형 사용 가이드 v2.1.pdf) | v1 가이드를 바탕으로 버전 표기와 '꼭 지킬 것'(셔츠 여밈 선, 열쇠고리 정지/동작)만 고쳐 다시 만듦 (Claude). v1 PDF(SHA-256 `90f0e18d8b86875b8ab526d7c5470e413a85bdd8116dfef34de15fde62311d3a`)는 커밋 `58ebc02`에 남아 있고, 드라이브 사본은 사용자 요청으로 휴지통 이동 | `7ef5aba242db534f9addfbcf571a0ed435547a415558fe08159b35fa724917c1` |
 
 ## 4. 다음에 남길 것
 - [ ] 제미나이 프롬프트 원문과 생성 화면 캡처 (기준 그림 v2를 만든 날짜 포함) → 드라이브 `01_캐릭터_차형/창작 기록/`
