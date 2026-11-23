@@ -153,8 +153,13 @@ def align(kept, sents, syl, max_join=3, max_skip=0.6, target=4.0):
 
     @lru_cache(None)
     def f(i, m):
-        if m == M:
-            return (0.0, ()) if i == N else (INF, ())
+        if m == M:                          # 문장을 다 배정한 뒤 남은 짧은 잡음은 건너뜀
+            if i == N:
+                return (0.0, ())
+            if en[i] - st[i] < max_skip:
+                v, p = f(i + 1, m)
+                return (v + 0.3, (("skip", i),) + p)
+            return (INF, ())
         if i >= N:
             return (INF, ())
         best = (INF, ())
@@ -165,6 +170,9 @@ def align(kept, sents, syl, max_join=3, max_skip=0.6, target=4.0):
             v, p = f(j, m + 1)
             dur = en[j - 1] - st[i]
             c = math.log(syl[m] / dur / target) ** 2 + 0.05 * (j - i - 1)
+            # 문장 사이 쉼(규칙상 2초)만큼 떨어진 조각은 같은 문장으로 묶지 않는다
+            if any(st[q + 1] - en[q] > 1.8 for q in range(i, j - 1)):
+                c += 5
             best = min(best, (v + c, (("line", i, j),) + p))
         return best
 

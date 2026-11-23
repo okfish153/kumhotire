@@ -31,7 +31,7 @@ VOICE_GLOB = os.path.join(ROOT, "assets", "voice", "ep02", "ep02_take1.*")
 VOICE_DIR = os.path.join(ROOT, "build", "ep02_take1")
 BUILD = os.path.join(ROOT, "build", "ep02_video")
 OUT = os.path.join(ROOT, "output", "ep02_new_grandeur_1min.mp4")
-CUT_ARGS = ["--gap", "0.3", "--inner-pause", "0.25"]      # 녹음 길이를 보고 --tempo 를 더한다
+CUT_ARGS = ["--no-clap", "--gap", "0.3", "--inner-pause", "0.25"]   # 손뼉 없이 녹음, 54초대라 속도 1.0배
 TITLE = ("신입 월급 *5년 치* 차?", "1992 회장님 차 *3,490만 원*")
 FPS = 30
 TAIL = 0.35
@@ -316,7 +316,7 @@ def frame(i):
         paste(c, text_img(txt, 160, YEL, "Black", stroke=6, sfill=(0, 0, 0), shadow=10), W / 2 + dx, 800 + dy, sc)
         ps = prog(t, hit + 0.15, 0.16)
         if ps > 0:
-            paste(c, stamp("3.0 골드", 70), W / 2 + 250, 950, 2.2 - 1.2 * ps, 0, clamp(ps * 3))
+            paste(c, stamp("3.0 골드", 56), W / 2 + 170, 960, 2.2 - 1.2 * ps, -6, clamp(ps * 3))
         paste(c, text_img("1992년 출시 때 최고 모델 · 한국일보 보도", 36, CREAM, "Bold", stroke=4, sfill=(0, 0, 0),
                           shadow=3), W / 2, 1080, 1, 0, prog(t, hit + 0.3, 0.25))
     elif t < Ls(7) - 0.05:                                      # 6 각그랜저의 두 배
@@ -332,7 +332,7 @@ def frame(i):
             paste(c, polaroid(which, 220), x, base_y - hgt - 190, 0.9, -4 if k == 0 else 4, clamp(lt * 3))
         ps = prog(t, chunk_start(6, 1) + 0.1, 0.16)
         if ps > 0:
-            paste(c, stamp("2배 넘게!", 70), 455, 640, 2.2 - 1.2 * ps, -6, clamp(ps * 3))
+            paste(c, stamp("2배 넘게!", 58), 400, 600, 2.2 - 1.2 * ps, -6, clamp(ps * 3))
     elif t < Ls(9) - 0.05:                                      # 7·8 대졸 신입 월급 55만 × 63칸
         cred = None
         lt = t - Ls(7)
