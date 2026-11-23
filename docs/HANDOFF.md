@@ -41,8 +41,8 @@
    - 손뼉 오탐 주의: 이 녹음에서 센 자음·입소리 8곳이 손뼉으로 잡혀 조건을 강화함(중심 주파수 1.5kHz 이상, 앞뒤 조용). 그래도 5.02초 입소리 1곳은 잡히므로 손뼉을 안 쳤으면 `--no-clap`
    - 고정 제목: "짜장면 28,000그릇 값?" / "지금 짜장면 값으론 2억!"
    - 차형은 가운데 영상의 아래 구석에 반응용으로 넣는다. 출처 표기와 겹치지 않게 한다.
-4. **뉴그랜저 (EP02):** 계획 `docs/ep02_new_grandeur_plan.md` (A안 대본 "신입사원 월급 오 년 치" 채택). 녹음용 대본 `docs/ep02_new_grandeur_script.md`, 영상 코드 `ep02_new_grandeur.py` 완성. 녹음 1차 `assets/voice/ep02/ep02_take1.aac`(손뼉 없음, 81.9초) → `--no-clap`, 속도 1.0배로 11문장 53.9초. **영상 1차 완성:** `output/ep02_new_grandeur_1min.mp4` (54.3초, -14 LUFS) + `.srt`. 녹음 끝 0.42초 잡음은 자동 맞춤에서 건너뜀(clap_cut: 2초 넘게 떨어진 조각은 같은 문장으로 묶지 않고, 끝에 남은 짧은 잡음은 건너뜀). 실사진은 지금 진녹색 정면 1장(`grandeur_lx.jpg`, 저작자·라이선스 확인 필요)뿐. 차형은 문장마다 `chahyung_motion.py` 동작으로 반응한다
-5. 이후 그랜저 XG(EP03)를 같은 1분 형식으로 만든다.
+4. **뉴그랜저 (EP02):** 계획 `docs/ep02_new_grandeur_plan.md` (A안 대본 "신입사원 월급 오 년 치" 채택). 녹음용 대본 `docs/ep02_new_grandeur_script.md`, 영상 코드 `ep02_new_grandeur.py` 완성. 녹음 1차 `assets/voice/ep02/ep02_take1.aac`(손뼉 없음, 81.9초) → `--no-clap`, 속도 1.0배로 11문장 53.9초. **영상 1차 완성:** `output/ep02_new_grandeur_1min.mp4` (54.3초, -14 LUFS) + `.srt`. 녹음 끝 0.42초 잡음은 자동 맞춤에서 건너뜀(clap_cut: 2초 넘게 떨어진 조각은 같은 문장으로 묶지 않고, 끝에 남은 짧은 잡음은 건너뜀). 실사진: 진녹색 정면 `grandeur_lx.jpg` = Commons "20100728 hyundai grandeur 01.jpg"(Chu, CC BY-SA 3.0, 픽셀 비교로 같은 사진 확인), 옆모습 `grandeur_lx_side_chu.jpg` = "20110723 hyundai grandeur 1.jpg"(Chu, CC BY-SA 3.0). 업로드 문구 `docs/ep02_new_grandeur_upload.md`. 차형은 문장마다 `chahyung_motion.py` 동작으로 반응한다
+5. 이후 그랜저 XG(EP03)를 같은 1분 형식으로 만든다. 사진 후보: `assets/images/grandeur_xg_benespit.jpg` = Commons "2000 Hyundai Grandeur (XG).jpg"(Benespit, CC BY-SA 4.0, 사용자가 고름)
 
 ## 현재 결과물
 | 구분 | 파일 | 상태 |
@@ -68,6 +68,7 @@
   - 프레임리스 도어: 현대차그룹 스토리
 
 ## 환경 메모
+- Commons 접속: 이 저장소용 클라우드 환경 `kumhotire`에서 commons.wikimedia.org, upload.wikimedia.org, thumb.wikimedia.org를 허용함. 원본(upload)은 요청이 잦으면 429로 막히니, 사진은 thumb.wikimedia.org의 정해진 크기(960px·1280px 등) 썸네일로 받고, 저작자·라이선스는 Commons API(`prop=imageinfo&iiprop=extmetadata`)로 확인한다
 - 이 클라우드 환경에서는 Wikimedia Commons와 이미지 서버 접속이 막혀 있다. 실차 사진은 사용자가 내려받아 올린다.
 - OpenAI와 제미나이 API는 연결돼 있으나 둘 다 크레딧이 없다(제미나이는 선불 크레딧 소진).
   - 그래서 이미지는 사용자가 제미나이 앱에서 만든다.

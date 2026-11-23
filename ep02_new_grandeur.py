@@ -38,8 +38,10 @@ TAIL = 0.35
 LX_PATH = os.path.join(ROOT, "assets", "images", "grandeur_lx.jpg")
 LX_BOX = (60, 0, 1280, 711)            # 왼쪽 다른 차를 뺀 영역
 LX_PLATE = (935, 520, 1110, 650)
-# 사진 저작자·라이선스 확인 전 임시 표기 (확인되면 바꿈)
-LX_CREDIT = "사진: Wikimedia Commons · Category:Hyundai Grandeur (LX) · 저작자·라이선스 확인 중"
+# 사진: Chu, CC BY-SA 3.0 (Commons "20100728 hyundai grandeur 01.jpg", "20110723 hyundai grandeur 1.jpg")
+LX_CREDIT = "사진: Chu · CC BY-SA 3.0 · Wikimedia Commons (크롭·번호판 흐림)"
+SIDE_PATH = os.path.join(ROOT, "assets", "images", "grandeur_lx_side_chu.jpg")
+SIDE_PLATE = (40, 365, 135, 465)
 
 CAPS = [
     ["신입사원 월급 *5년 치*"],
@@ -147,6 +149,19 @@ def lx_photo():
     im = Image.open(LX_PATH).convert("RGB")
     im.paste(im.crop(LX_PLATE).filter(ImageFilter.GaussianBlur(14)), LX_PLATE[:2])
     return im.convert("RGBA")
+
+
+@lru_cache(None)
+def side_photo():
+    im = Image.open(SIDE_PATH).convert("RGB")
+    im.paste(im.crop(SIDE_PLATE).filter(ImageFilter.GaussianBlur(14)), SIDE_PLATE[:2])
+    return im.convert("RGBA")
+
+
+def side_card(zoom=1.0, fx=0.5, fy=0.5):
+    inner = cover(side_photo(), CARD_W, CARD_H, zoom, fx, fy, (0, 0, 1280, 550))
+    inner.putalpha(G.card_mask())
+    return inner
 
 
 def lx_card(zoom=1.0, fx=0.55, fy=0.55):
@@ -289,7 +304,7 @@ def frame(i):
         big(c, "= 이 차 한 대 값", Ls(2) + 0.1, t, 1150, 96, YEL)
     elif t < Ls(4) - 0.05:                                      # 3 1992 뉴 그랜저, 각이 사라짐
         lt = t - Ls(3)
-        put_card(c, lx_card(1.0 + 0.06 * in_out(prog(lt, 0, 3)), 0.6, 0.6))
+        put_card(c, side_card(1.0, 0.15 + 0.7 * in_out(prog(lt, 0, max(1.0, Le(3) - Ls(3))))))   # 옆모습을 따라 이동
         p = in_out(prog(lt, 0.2, 0.8))                           # 네모 → 둥글게
         r = int(10 + 70 * p)
         sq = Image.new("RGBA", (220, 220), (0, 0, 0, 0))
@@ -321,7 +336,7 @@ def frame(i):
                           shadow=3), W / 2, 1080, 1, 0, prog(t, hit + 0.3, 0.25))
     elif t < Ls(7) - 0.05:                                      # 6 각그랜저의 두 배
         lt = t - Ls(6)
-        cred = "사진: Sim1992 · CC BY-SA 3.0 / Wikimedia Commons LX(확인 중)"
+        cred = "사진: Sim1992 · Chu · CC BY-SA 3.0 · Wikimedia Commons (크롭·번호판 흐림)"
         G.panel(c, (34, 32, 30))
         base_y = 1250
         for k, (which, v, x) in enumerate([("gak", 1690, 300), ("lx", 3490, 780)]):
