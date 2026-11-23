@@ -56,7 +56,8 @@ def in_out(p):
 # ------------------------------------------------------------------ assets
 @lru_cache(None)
 def font(size, weight="Black"):
-    return ImageFont.truetype(os.path.join(FNT, f"Pretendard-{weight}.ttf"), size)
+    name = "Jua-Regular.ttf" if weight == "Jua" else f"Pretendard-{weight}.ttf"
+    return ImageFont.truetype(os.path.join(FNT, name), size)
 
 
 @lru_cache(None)
@@ -617,6 +618,7 @@ def scene6(c, t):
 
 SCENES = [scene1, scene2, scene3, scene4, scene5, scene6]
 EPISODES = {"ep1": SCENES}  # 다른 에피소드는 epN.py 에서 등록
+EP_OPTS = {}               # 에피소드별 옵션: subtitle / vignette / overlay_fn
 
 
 # ------------------------------------------------------------------ frame
@@ -637,15 +639,20 @@ def frame(idx):
     ss = TL["scene_starts"]
     si = max(i for i in range(len(ss)) if ss[i] <= t)
     c = Image.new("RGBA", (W, H), DARK + (255,))
-    EPISODES.get(TL.get("ep", "ep1"), SCENES)[si](c, t)
-    c.alpha_composite(vignette())
+    ep = TL.get("ep", "ep1")
+    opts = EP_OPTS.get(ep, {})
+    EPISODES.get(ep, SCENES)[si](c, t)
+    if opts.get("vignette", True):
+        c.alpha_composite(vignette())
     # 카메라 쉐이크
     dx, dy = shake(t, TL["shakes"])
     if abs(dx) + abs(dy) > 0.5:
         c = c.transform((W, H), Image.AFFINE, (1, 0, -dx, 0, 1, -dy), Image.BILINEAR, fillcolor=DARK + (255,))
     # 상단 브랜드/진행바, 자막
     paste(c, brand_pill(), 60 + brand_pill().width / 2, 150)
-    subtitle(c, t)
+    opts.get("subtitle", subtitle)(c, t)
+    if "overlay_fn" in opts:
+        opts["overlay_fn"](c, t)
     d = ImageDraw.Draw(c)
     d.rectangle((0, 0, int(W * t / TL["total"]), 9), fill=RED)
     # 장면 전환 플래시

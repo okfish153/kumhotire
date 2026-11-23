@@ -125,6 +125,8 @@ def main():
         name, lines, chunks_def, sfx_fn, shakes_fn, extra = (
             E.OUT_NAME, E.LINES, E.CHUNKS, E.sfx_events, E.shakes, E.EXTRA)
         vdir = os.path.join(ROOT, "assets", "voice", a.ep)
+        for k, v in getattr(E, "VOICE", {}).items():   # 예: {"SUPERTONIC_SID": 1}
+            setattr(narration, k, v)
     os.makedirs(BUILD, exist_ok=True); os.makedirs(OUT, exist_ok=True)
 
     tl_path = os.path.join(BUILD, "timeline.json")
@@ -147,7 +149,7 @@ def main():
 
     mix = os.path.join(BUILD, "mix.wav")
     audio.build_mix(tl["total"], [os.path.join(BUILD, f"narr_{i:02d}.wav") for i in range(len(durs))],
-                    tl["line_starts"], sfx_fn(tl), mix)
+                    tl["line_starts"], sfx_fn(tl), mix, style=tl.get("audio_style", "default"))
     print("[audio] mix done")
 
     vid = video.render(tl, BUILD)

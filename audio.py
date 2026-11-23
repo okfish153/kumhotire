@@ -199,9 +199,117 @@ SFX = {"whoosh": sfx_whoosh, "whoosh_down": lambda: sfx_whoosh(0.4, False),
        "riser": sfx_riser, "cash": sfx_cash, "click": sfx_click}
 
 
-def build_mix(total, narr_paths, narr_starts, events, out_path):
+def bgm_cute(total):
+    """귀여운 톤: 112BPM, 장조(C-G-Am-F), 마림바 + 글로켄슈필 + 우쿨렐레풍 플럭 + 손가락 스냅"""
+    bpm = 112
+    beat = 60 / bpm
+    n = int(total * SR) + SR
+    L = np.zeros(n); R = np.zeros(n)
+
+    def add(buf, x, t, g=1.0):
+        i = int(t * SR)
+        if i >= n:
+            return
+        x = x[: n - i]
+        buf[i:i + len(x)] += x * g
+
+    def marimba(f, sec=0.45):
+        t = _t(sec)
+        return (np.sin(2 * np.pi * f * t) + 0.25 * np.sin(2 * np.pi * f * 4 * t) * np.exp(-t * 30)) * np.exp(-t * 9)
+
+    def glock(f, sec=0.9):
+        t = _t(sec)
+        return (np.sin(2 * np.pi * f * t) + 0.3 * np.sin(2 * np.pi * f * 2.76 * t)) * np.exp(-t * 5)
+
+    def pluck(f, sec=0.5):  # Karplus-Strong 우쿨렐레 느낌
+        N = int(SR / f)
+        buf = rng.uniform(-1, 1, N)
+        out = np.zeros(int(sec * SR))
+        for i in range(len(out)):
+            out[i] = buf[i % N]
+            buf[i % N] = 0.5 * (buf[i % N] + buf[(i + 1) % N]) * 0.996
+        return out
+
+    def snap():
+        t = _t(0.08)
+        return _filt(rng.standard_normal(len(t)), "bandpass", [1800, 5000]) * np.exp(-t * 70) * 0.5
+
+    def soft_kick():
+        t = _t(0.25)
+        return np.sin(2 * np.pi * np.cumsum(55 + 70 * np.exp(-t * 30)) / SR) * np.exp(-t * 14)
+
+    prog_ = [(48, [60, 64, 67]), (43, [59, 62, 67]), (45, [57, 60, 64]), (41, [57, 60, 65])]
+    melody = [0, 2, 1, 2, 0, 2, 1, 3]  # 코드톤 인덱스 패턴 (3 = 옥타브 위 루트)
+    k, sn = soft_kick(), snap()
+    plucks = {}
+    bars = int(total / (beat * 4)) + 2
+    for b in range(bars):
+        root, chord = prog_[b % 4]
+        for q in range(4):
+            tb = (b * 4 + q) * beat
+            if q in (0, 2):
+                add(L, k, tb, 0.55); add(R, k, tb, 0.55)
+            if q in (1, 3):
+                add(L, sn, tb, 0.6); add(R, sn, tb + 0.006, 0.45)
+            sh = hat() * 0.6
+            add(L, sh, tb + beat / 2, 0.5); add(R, sh, tb + beat / 2, 0.7)
+            # 베이스 (부드러운 사인 플럭)
+            bt = _t(beat * 0.8)
+            bass = np.sin(2 * np.pi * note(root - 12) * bt) * np.exp(-bt * 4)
+            add(L, bass, tb, 0.35); add(R, bass, tb, 0.35)
+            # 우쿨렐레 스트럼 (업/다운)
+            for e, delay in ((0, 0.0), (1, beat / 2)):
+                for j, m in enumerate(chord):
+                    if m not in plucks:
+                        plucks[m] = pluck(note(m))
+                    add(L if j % 2 else R, plucks[m], tb + delay + j * 0.012, 0.11)
+        # 마림바 멜로디 (8분음표)
+        for s_ in range(8):
+            idx = melody[(s_ + b) % 8]
+            m = (chord[idx] if idx < 3 else chord[0] + 12) + 12
+            add(L if s_ % 2 else R, marimba(note(m)), (b * 4 + s_ * 0.5) * beat, 0.16)
+        # 글로켄 반짝 (마디 끝)
+        add(L, glock(note(chord[2] + 24)), (b * 4 + 3.5) * beat, 0.07)
+        add(R, glock(note(chord[0] + 36)), (b * 4 + 3.75) * beat, 0.05)
+    return np.stack([L, R], 1)[: int(total * SR)]
+
+
+def sfx_boing():
+    t = _t(0.5)
+    f = 180 + 120 * np.sin(2 * np.pi * 9 * t) * np.exp(-t * 4) + 90 * np.exp(-t * 6)
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 6) * 0.7
+
+
+def sfx_squeak():
+    t = _t(0.18)
+    f = 900 + 1600 * (t / 0.18) ** 0.7
+    return np.sin(2 * np.pi * np.cumsum(f) / SR) * np.sin(np.pi * t / 0.18) * 0.45
+
+
+def sfx_sparkle():
+    out = np.zeros(int(0.9 * SR))
+    for i, m in enumerate([88, 92, 95, 100, 104]):
+        t = _t(0.5)
+        x = np.sin(2 * np.pi * note(m) * t) * np.exp(-t * 9)
+        j = int(i * 0.06 * SR)
+        out[j:j + len(x)] += x[: len(out) - j]
+    return out * 0.25
+
+
+def sfx_shock():
+    """'헉!' 만화 효과: 내려가는 슬라이드 휘슬 + 쿵"""
+    t = _t(0.55)
+    f = 1400 * np.exp(-t * 4) + 200
+    w = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * 3) * 0.35
+    return w + sfx_impact()[: len(t)] * 0.5
+
+
+SFX.update({"boing": sfx_boing, "squeak": sfx_squeak, "sparkle": sfx_sparkle, "shock": sfx_shock})
+
+
+def build_mix(total, narr_paths, narr_starts, events, out_path, style="default"):
     n = int(total * SR)
-    music = bgm(total)
+    music = bgm_cute(total) if style == "cute" else bgm(total)
     # 인트로 0.25초 페이드인, 아웃트로 1.2초 페이드아웃
     fade = np.ones(n)
     fi = int(0.25 * SR); fo = int(1.2 * SR)
