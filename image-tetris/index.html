@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#0f1024">
+  <meta name="description" content="내 사진으로 즐기는 테트리스 – 이미지 배경, 이미지 블록, 이미지 완성, 테마 자동 생성, 랜덤 챌린지">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>IMAGE TETRIS – 나만의 이미지 블록 퍼즐</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='2' width='9' height='9' rx='2' fill='%23ff7eb6'/%3E%3Crect x='12' y='2' width='9' height='9' rx='2' fill='%238b7bff'/%3E%3Crect x='22' y='2' width='9' height='9' rx='2' fill='%2335c9f0'/%3E%3Crect x='12' y='12' width='9' height='9' rx='2' fill='%23f7d31e'/%3E%3Crect x='2' y='22' width='29' height='8' rx='2' fill='%234cc463'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ======================= 메인 화면 ======================= -->
+    <section id="screen-menu" class="screen active" aria-label="메인 화면">
+      <div class="menu-inner">
+        <header class="hero">
+          <div class="logo" aria-label="IMAGE TETRIS">
+            <span class="logo-top">IMAGE</span>
+            <span class="logo-main">TETRIS</span>
+          </div>
+          <p class="tagline">내 사진이 블록이 되고, 줄을 지우면 그림이 완성되는 퍼즐</p>
+        </header>
+
+        <div class="menu-grid">
+          <div class="card current-card">
+            <button class="current-thumb" id="menu-thumb-btn" data-nav="library" aria-label="대표 이미지 변경">
+              <img id="menu-thumb" alt="대표 이미지">
+            </button>
+            <div class="current-info">
+              <span class="label">대표 이미지</span>
+              <strong id="menu-image-name">-</strong>
+              <div class="palette-mini" id="menu-palette"></div>
+              <div class="btn-row">
+                <button class="btn btn-sm" data-nav="library" data-tab="user">📷 나만의 이미지 등록</button>
+                <button class="btn btn-sm" data-nav="library" data-tab="samples">🎨 샘플 이미지 선택</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">게임 모드</h3>
+            <div id="mode-list" class="mode-list" role="radiogroup" aria-label="게임 모드"></div>
+          </div>
+
+          <div class="card">
+            <h3 class="card-title">난이도</h3>
+            <div id="difficulty-list" class="seg" role="radiogroup" aria-label="난이도"></div>
+            <div id="custom-diff" class="custom-diff hidden">
+              <label>목표 줄 수 <input type="number" id="custom-target" min="1" max="200" inputmode="numeric"></label>
+              <label>시작 레벨 <input type="number" id="custom-level" min="1" max="20" inputmode="numeric"></label>
+            </div>
+            <p class="hint" id="difficulty-hint"></p>
+          </div>
+        </div>
+
+        <button id="btn-start" class="btn btn-primary btn-xl">▶ 게임 시작</button>
+
+        <nav class="menu-nav">
+          <button class="nav-btn" data-nav="library" data-tab="user"><span>🖼️</span>이미지 설정</button>
+          <button class="nav-btn" data-nav="collection"><span>🏆</span>이미지 컬렉션 <em id="col-count" class="badge"></em></button>
+          <button class="nav-btn" data-nav="records"><span>📊</span>최고 기록</button>
+          <button class="nav-btn" data-nav="settings"><span>⚙️</span>환경 설정</button>
+        </nav>
+        <p class="footnote">등록한 사진은 이 기기의 브라우저 안에만 저장되며 외부로 전송되지 않습니다.</p>
+      </div>
+    </section>
+
+    <!-- ======================= 이미지 설정 화면 ======================= -->
+    <section id="screen-library" class="screen" aria-label="이미지 설정">
+      <header class="screen-head">
+        <button class="btn-back" data-nav="menu" aria-label="뒤로">←</button>
+        <h2>이미지 설정</h2>
+      </header>
+      <div class="library-layout">
+        <div class="lib-left">
+          <div class="tabs" role="tablist">
+            <button role="tab" data-libtab="user" class="active">내 이미지 <em id="user-count" class="badge"></em></button>
+            <button role="tab" data-libtab="samples">샘플 테마</button>
+          </div>
+          <div id="lib-user" class="lib-pane">
+            <label id="dropzone" class="dropzone" tabindex="0">
+              <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" multiple>
+              <span class="dz-icon">📷</span>
+              <strong>이미지를 끌어다 놓거나 눌러서 선택하세요</strong>
+              <small>JPG · JPEG · PNG · WebP · 여러 장 동시 등록 가능 · 휴대폰 갤러리 사진 선택 가능</small>
+            </label>
+            <div id="upload-progress" class="upload-progress hidden"><div class="bar"><i></i></div><span></span></div>
+            <div id="user-grid" class="thumb-grid"></div>
+            <p id="user-empty" class="empty">아직 등록한 이미지가 없어요. 좋아하는 사진을 추가해 보세요!</p>
+          </div>
+          <div id="lib-samples" class="lib-pane hidden">
+            <div id="sample-theme-tabs" class="chips"></div>
+            <div id="sample-grid" class="thumb-grid"></div>
+          </div>
+        </div>
+
+        <div class="lib-right">
+          <div class="card">
+            <div class="sel-head">
+              <img id="sel-thumb" alt="">
+              <div>
+                <span class="label">선택한 이미지</span>
+                <strong id="sel-name">-</strong>
+                <small id="sel-meta"></small>
+              </div>
+            </div>
+            <div class="btn-row wrap">
+              <button class="btn btn-sm" id="btn-edit">✂️ 자르기 · 회전 · 밝기</button>
+              <button class="btn btn-sm" id="btn-rename">✏️ 이름 변경</button>
+              <button class="btn btn-sm btn-danger" id="btn-delete">🗑 삭제</button>
+            </div>
+            <h4 class="sub-title">적용 대상 선택</h4>
+            <div class="target-grid">
+              <button class="target" data-target="main"><b>⭐ 대표 이미지</b><small>이미지 완성 · 테마 · 패널</small><i class="assigned"></i></button>
+              <button class="target" data-target="bg"><b>🖼️ 배경 이미지</b><small>배경 모드 게임판</small><i class="assigned"></i></button>
+              <button class="target" data-target="block"><b>🧩 블록 이미지</b><small>한 장을 블록 모양별로 분할</small><i class="assigned"></i></button>
+            </div>
+            <h4 class="sub-title">블록 이미지 방식</h4>
+            <div class="seg" id="block-mode-seg">
+              <button data-blockmode="slice">한 장 분할</button>
+              <button data-blockmode="perPiece">7종 개별 이미지</button>
+            </div>
+            <div id="piece-slot-wrap" class="piece-slot-wrap">
+              <p class="hint">블록 칸을 누르면 선택한 이미지가 그 블록에 지정됩니다. (✕: 지정 해제)</p>
+              <div class="piece-slots" id="piece-slots"></div>
+            </div>
+          </div>
+
+          <div class="card preview-card">
+            <div class="preview-head">
+              <h4 class="sub-title">적용 결과 미리보기</h4>
+              <select id="preview-mode" aria-label="미리볼 모드"></select>
+            </div>
+            <div class="preview-body">
+              <canvas id="preview-canvas" aria-label="미리보기"></canvas>
+              <div class="preview-side-col">
+              <canvas id="preview-side" aria-label="이미지 패널 미리보기"></canvas>
+              <div class="preview-controls">
+                <label>배경 투명도 <output id="bg-opacity-out"></output><input type="range" id="bg-opacity" min="0.1" max="1" step="0.05"></label>
+                <label>배경 어둡게 <output id="bg-dim-out"></output><input type="range" id="bg-dim" min="0" max="0.85" step="0.05"></label>
+                <label class="check"><input type="checkbox" id="block-bg"> 블록 모드에서도 배경 이미지 표시</label>
+              </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4 class="sub-title">테마 색상 <small>대표 이미지에서 자동 추출 · 눌러서 직접 수정</small></h4>
+            <div id="theme-swatches" class="swatches"></div>
+            <div class="btn-row"><button class="btn btn-sm" id="btn-theme-reset">↺ 자동 색상으로 되돌리기</button></div>
+          </div>
+
+          <div class="btn-row lib-actions">
+            <button class="btn" id="btn-reset-default">기본 이미지로 초기화</button>
+            <button class="btn btn-primary" id="btn-save-start">저장 후 게임 시작 ▶</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= 게임 화면 ======================= -->
+    <section id="screen-game" class="screen" aria-label="게임">
+      <div class="game-layout" id="game-layout">
+        <aside class="side side-left">
+          <div class="panel p-hold"><h5>HOLD <kbd>C</kbd></h5><canvas id="hold-canvas"></canvas></div>
+          <div class="panel p-stats">
+            <div class="stat stat-score"><span>SCORE</span><b id="hud-score">0</b></div>
+            <div class="stat"><span>BEST</span><b id="hud-best">0</b></div>
+            <div class="stat"><span>LEVEL</span><b id="hud-level">1</b></div>
+            <div class="stat"><span>LINES</span><b id="hud-lines">0</b></div>
+            <div class="stat"><span>COMBO</span><b id="hud-combo">0</b></div>
+            <div class="stat"><span>TIME</span><b id="hud-time">00:00</b></div>
+          </div>
+          <div class="panel p-mode" id="hud-mode"></div>
+        </aside>
+
+        <main class="board-wrap" id="board-wrap">
+          <div class="board-frame" id="board-frame">
+            <canvas id="board" aria-label="게임판"></canvas>
+            <div id="board-overlay" class="board-overlay"></div>
+          </div>
+        </main>
+
+        <aside class="side side-right">
+          <div class="panel p-next"><h5>NEXT</h5><canvas id="next-canvas"></canvas></div>
+          <div class="panel p-reveal">
+            <h5 id="reveal-title">이미지 완성</h5>
+            <canvas id="reveal-canvas"></canvas>
+            <div class="reveal-progress" id="reveal-progress">
+              <div class="bar"><i id="reveal-bar"></i></div>
+              <div class="reveal-info"><b id="reveal-pct">0%</b><span id="reveal-lines">0 / 10줄</span></div>
+            </div>
+            <div class="palette-mini" id="game-palette"></div>
+            <div id="next-image" class="next-image hidden"><span>다음 이미지</span><b>?</b></div>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="game-footer">
+        <div class="keys-help">
+          <span><kbd>←</kbd><kbd>→</kbd> 이동</span><span><kbd>↓</kbd> 빠른 낙하</span><span><kbd>↑</kbd>/<kbd>X</kbd> 회전</span>
+          <span><kbd>Z</kbd> 반대 회전</span><span><kbd>Space</kbd> 즉시 낙하</span><span><kbd>C</kbd> 보관</span><span><kbd>P</kbd> 일시정지</span>
+        </div>
+        <div class="footer-btns">
+          <button class="icon-btn" id="btn-bgm" title="배경음 켜기/끄기" aria-label="배경음">🎵</button>
+          <button class="icon-btn" id="btn-sfx" title="효과음 켜기/끄기" aria-label="효과음">🔊</button>
+          <button class="btn btn-sm" id="btn-pause">⏸ 일시정지</button>
+        </div>
+      </footer>
+
+      <div class="touch-controls" id="touch-controls">
+        <div class="tc-group tc-left">
+          <button class="tc" data-act="hold" aria-label="보관">HOLD</button>
+          <button class="tc tc-big" data-act="left" aria-label="왼쪽">◀</button>
+          <button class="tc tc-big" data-act="soft" aria-label="빠른 낙하">▼</button>
+          <button class="tc tc-big" data-act="right" aria-label="오른쪽">▶</button>
+        </div>
+        <div class="tc-group tc-right">
+          <button class="tc" data-act="pause" aria-label="일시정지">Ⅱ</button>
+          <button class="tc tc-big" data-act="ccw" aria-label="반시계 회전">⟲</button>
+          <button class="tc tc-big" data-act="cw" aria-label="시계 회전">⟳</button>
+          <button class="tc tc-big tc-hard" data-act="hard" aria-label="즉시 낙하">⤓</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= 컬렉션 ======================= -->
+    <section id="screen-collection" class="screen" aria-label="이미지 컬렉션">
+      <header class="screen-head">
+        <button class="btn-back" data-nav="menu" aria-label="뒤로">←</button>
+        <h2>이미지 컬렉션</h2>
+        <button class="btn btn-sm btn-danger head-action" id="btn-col-clear">전체 삭제</button>
+      </header>
+      <div class="screen-body">
+        <p class="hint" id="col-summary"></p>
+        <div id="collection-grid" class="thumb-grid collection-grid"></div>
+        <p id="col-empty" class="empty">아직 완성한 이미지가 없어요.<br>‘이미지 완성’ 또는 ‘랜덤 챌린지’ 모드에서 목표 줄 수를 채워 보세요!</p>
+      </div>
+    </section>
+
+    <!-- ======================= 기록 ======================= -->
+    <section id="screen-records" class="screen" aria-label="최고 기록">
+      <header class="screen-head">
+        <button class="btn-back" data-nav="menu" aria-label="뒤로">←</button>
+        <h2>최고 기록</h2>
+        <button class="btn btn-sm btn-danger head-action" id="btn-rec-reset">기록 초기화</button>
+      </header>
+      <div class="screen-body">
+        <div id="records-summary" class="summary-grid"></div>
+        <div id="records-modes" class="records-modes"></div>
+      </div>
+    </section>
+
+    <!-- ======================= 설정 ======================= -->
+    <section id="screen-settings" class="screen" aria-label="환경 설정">
+      <header class="screen-head">
+        <button class="btn-back" data-nav="menu" aria-label="뒤로">←</button>
+        <h2>환경 설정</h2>
+      </header>
+      <div class="screen-body settings-body" id="settings-body"></div>
+    </section>
+  </div>
+
+  <div id="modal-root" class="modal-root"></div>
+  <div id="toast-root" class="toast-root" aria-live="polite"></div>
+  <noscript><p style="padding:20px;color:#fff">이 게임은 JavaScript가 필요합니다.</p></noscript>
+
+  <!-- 공통 / 순수 로직 -->
+  <script src="js/util.js"></script>
+  <script src="js/core/pieces.js"></script>
+  <script src="js/core/engine.js"></script>
+  <script src="js/core/modes.js"></script>
+  <!-- 이미지 처리 -->
+  <script src="js/image/palette.js"></script>
+  <script src="js/image/processor.js"></script>
+  <script src="js/image/textures.js"></script>
+  <!-- 샘플 이미지 (테마별 파일) -->
+  <script src="js/samples/svg-kit.js"></script>
+  <script src="js/samples/registry.js"></script>
+  <script src="js/samples/theme-nature.js"></script>
+  <script src="js/samples/theme-animals.js"></script>
+  <script src="js/samples/theme-clay.js"></script>
+  <script src="js/samples/theme-cars.js"></script>
+  <script src="js/samples/theme-space.js"></script>
+  <script src="js/samples/theme-food.js"></script>
+  <!-- 저장 -->
+  <script src="js/data/db.js"></script>
+  <script src="js/data/storage.js"></script>
+  <script src="js/data/library.js"></script>
+  <script src="js/data/collection.js"></script>
+  <!-- 사운드 / 렌더링 / 입력 -->
+  <script src="js/audio/sound.js"></script>
+  <script src="js/render/effects.js"></script>
+  <script src="js/render/renderer.js"></script>
+  <script src="js/render/reveal-view.js"></script>
+  <script src="js/ui/input.js"></script>
+  <!-- 게임 / 화면 -->
+  <script src="js/game.js"></script>
+  <script src="js/ui/ui-kit.js"></script>
+  <script src="js/ui/editor.js"></script>
+  <script src="js/ui/screens.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

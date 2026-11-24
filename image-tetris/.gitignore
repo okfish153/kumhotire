@@ -1,0 +1,3 @@
+tests/screenshots/
+tests/e2e-results.json
+node_modules/
