@@ -52,11 +52,11 @@ CAPS = [
     ["신입 월급마저 *줄던* 해였죠", "…짜장면도 못 먹고요"],
     ["그렇게 *회장님 뒷자리* 차가,", "*내가 운전석*에 앉는 차가 됐죠"],
     ["아까 그 문,", "창틀이 없는 *프레임리스 도어*", "유리만 쏙!"],
-    ["여러분 *아버지 차*는 뭐였어요?", "댓글로 알려 주세요"],
-    ["구독해 두시면", "옛날 차 이야기, 계속 들려드릴게요", "그러니까 이 차는요,"],
+    ["그리고 XG는,", "현대가 *직접 개발한 엔진*을 앞세운", "*첫 그랜저*였어요"],
+    ["근데 그거 아세요?", "원래 *그랜저*는요,"],
 ]
 MOTIONS = [["secret", "key_spin"], "nod", "secret", ["talk", "think", "think"], "jump", "talk", ["awkward", "awkward"],
-           ["talk", "key_spin"], ["point_down", "point_down", "cheer"], "point_down", ["cheer", "talk", "idle"]]
+           ["talk", "key_spin"], ["point_down", "point_down", "cheer"], ["talk", "key_spin", "jump"], ["think", "secret"]]
 CHAR_H, CHAR_X, CHAR_FOOT = 300, 950, 1405
 TL = E2.TL                                   # ep02 자막·차형 함수가 같은 타임라인을 보게 함
 E2.TITLE = TITLE
@@ -342,23 +342,24 @@ def frame(i):
             ps = prog(t, chunk_start(9, 2), 0.16)
             if ps > 0:
                 paste(c, stamp("유리만 쏙", 60), W / 2 + 230, 1150, 2.2 - 1.2 * ps, -6, clamp(ps * 3))
-    elif t < Ls(11) - 0.05:                                     # 10 댓글
+    elif t < Ls(11) - 0.05:                                     # 10 현대 독자 개발 엔진, 첫 그랜저
         lt = t - Ls(10)
-        cred = PHOTOS["white"][3]
-        put_card(c, xcard("white", 1.02))
-        shade_card(c, 0.5)
-        pb = out_back(prog(lt, 0.1, 0.3))
-        paste(c, bubble("아버지 차는…?"), W / 2, 760, pb + 0.001, 0, clamp(pb * 2))
-        pc = out_back(prog(t, chunk_start(10, 1), 0.3))
-        paste(c, label("댓글로 알려 주세요", 640, size=60), W / 2, 1000, pc + 0.001, 0, clamp(pc * 2))
-    else:                                                       # 11 구독 → 첫 화면으로
-        lt = t - Ls(11)
-        back = in_out(prog(t, chunk_start(11, 2), 0.8))
+        cred = PHOTOS["rear"][3]
+        put_card(c, xcard("rear", 1.1, 0.35, 0.45))
+        shade_card(c, 0.6)
+        pl = out_back(prog(t, chunk_start(10, 1), 0.3))
+        paste(c, label("현대 독자 개발 엔진", 620, AMBER, INK, 60), W / 2 - 40, 800, pl + 0.001, -2, clamp(pl * 2))
+        ps = prog(t, chunk_start(10, 2) + 0.05, 0.16)
+        if ps > 0:
+            sc = 2.2 - 1.2 * ps
+            paste(c, box(520, 150, 24, (250, 246, 236, 235), shadow=True), W / 2 - 40, 1000, sc, -6, clamp(ps * 3))
+            paste(c, stamp("첫 그랜저", 72), W / 2 - 40, 1000, sc, -6, clamp(ps * 3))
+        paste(c, text_img("현대자동차그룹 그랜저 역사 스토리", 30, CREAM, "Bold", stroke=4, sfill=(0, 0, 0)),
+              W / 2 - 40, 1140, 1, 0, prog(t, chunk_start(10, 2) + 0.4, 0.3))
+    else:                                                       # 11 첫 화면으로 돌아감
+        back = in_out(prog(t, Ls(11) + 0.1, 0.9))
         hook(c, 0.0, back)                                      # 첫 화면 사진 위에서 표시가 서서히 돌아옴
         shade_card(c, 0.3 * (1 - back))
-        p = out_back(prog(lt, 0.05, 0.3)) * (1 - prog(t, chunk_start(11, 2), 0.3))
-        sub = compose((box(420, 130, 65, RED, shadow=True), 0, 0), (text_img("구독", 76, WHITE, "Black", shadow=0), 0, -4))
-        paste(c, sub, W / 2, 900, p + 0.001, 0, clamp(p * 2))
     if cred:
         E2.credit_line(c, cred)
     char_react(c, t)
@@ -387,7 +388,8 @@ def build_audio(voice):
            (chunk_start(7, 1) + 0.3, stamp_sfx(), 0.6), (Ls(8), A.sfx_whoosh(0.35), 0.4),
            (chunk_start(8, 1) - 0.1, A.sfx_riser(0.6), 0.35), (chunk_start(8, 1) + 0.5, A.sfx_pop(), 0.6),
            (chunk_start(9, 1), A.sfx_whoosh(0.35), 0.4), (chunk_start(9, 2), stamp_sfx(), 0.8),
-           (Ls(10) + 0.1, A.sfx_pop(), 0.5), (Ls(11) + 0.05, A.sfx_pop(), 0.5)]
+           (Ls(10) + 0.1, A.sfx_whoosh(0.35), 0.4), (chunk_start(10, 1), A.sfx_pop(), 0.5),
+           (chunk_start(10, 2) + 0.05, stamp_sfx(), 0.8), (Ls(11) + 0.1, A.sfx_riser(0.8), 0.3)]
     fx = np.zeros(n)
     for t0, snd, g in ev:
         i = int(max(0, t0) * sr)

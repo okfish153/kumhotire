@@ -32,11 +32,11 @@ CAPS = [
     ["그 시절엔 말이죠,", "*청계천*이 다시 흐르기 시작한 해였어요"],
     ["그리고 그해 *12월*, 한 달에 *1만 236대*", "그랜저 처음으로 *한 달 1만 대*를 넘었습니다"],
     ["회장님 차에서, *누구나 타고 싶은 차*로", "그랜저 *전성기*의 문이 열린 거죠"],
-    ["여러분 *첫 그랜저*는 몇 세대였어요?", "댓글로 알려 주세요"],
-    ["구독 눌러 주시고요", "근데 그거 아세요?", "이 차 나온 *첫날 하루*에만요,"],
+    ["그리고 이 차, 단종을 앞둔 *2009년*에도", "*두 번이나* 한 달 1만 대를 넘겼어요"],
+    ["근데 이 모든 기록의 시작은,", "*딱 하루*였어요"],
 ]
 MOTIONS = ["shock", "nod", "secret", "jump", ["talk", "think", "think"], "cheer", "talk", ["shock", "key_spin"],
-           ["cheer", "nod"], "point_down", ["talk", "secret", "secret"]]
+           ["cheer", "nod"], ["talk", "shock"], ["think", "secret"]]
 PHOTOS = {
     "front": ("grandeur_tg_black_front_damianboh.jpg", (0, 0, 1280, 960), (330, 630, 600, 720),
               "사진: Damian B Oh · CC BY-SA 4.0 · Wikimedia Commons (크롭·번호판 흐림)"),
@@ -223,23 +223,33 @@ def frame(i):
                   clamp((p - 0.3) * 2))
         paste(c, label("회장님 차 → 누구나 타고 싶은 차", 820, (250, 246, 236), INK, 48), W / 2, 1250, 1, 0,
               clamp(lt * 4))
-    elif t < Ls(11) - 0.05:                                     # 10 댓글
+    elif t < Ls(11) - 0.05:                                     # 10 2009년에도 두 번 월 1만 대
         lt = t - Ls(10)
-        cred = PHOTOS["silver"][3]
-        put_card(c, xcard("silver", 1.02, 0.6, 0.5))
-        shade_card(c, 0.5)
-        pb = out_back(prog(lt, 0.1, 0.3))
-        paste(c, bubble("내 첫 그랜저는…?"), W / 2, 760, pb + 0.001, 0, clamp(pb * 2))
-        pc = out_back(prog(t, chunk_start(10, 1), 0.3))
-        paste(c, label("댓글로 알려 주세요", 640, size=60), W / 2, 1000, pc + 0.001, 0, clamp(pc * 2))
-    else:                                                       # 11 구독 → 첫 화면으로
-        lt = t - Ls(11)
-        back = in_out(prog(t, chunk_start(11, 1), 0.9))
+        cred = None
+        G.panel(c, (30, 30, 34))
+        paste(c, label("단종 앞둔 2009년", 560, (250, 246, 236), INK, 56), W / 2, 560, out_back(prog(lt, 0, 0.25)) + 0.001)
+        base_y, top = 1180, 470
+        line_y = base_y - top * 10000 / 11156
+        d = ImageDraw.Draw(c)
+        d.line((170, line_y, 910, line_y), fill=RED, width=6)
+        paste(c, text_img("1만 대 선", 34, RED, "Black", stroke=4, sfill=(255, 255, 255)), 230, line_y - 28)
+        for k, (mon, v, x) in enumerate([("5월", 10642, 420), ("6월", 11156, 680)]):
+            pk = out_cubic(prog(t, Ls(10) + 0.4 + 0.4 * k, 0.9))
+            hgt = int(top * v / 11156 * pk)
+            d.rectangle((x - 90, base_y - hgt, x + 90, base_y), fill=AMBER)
+            paste(c, text_img(f"{int(round(v * pk)):,}대", 52, WHITE, "Black", stroke=5, sfill=(0, 0, 0)),
+                  x, base_y - hgt - 40)
+            paste(c, text_img(mon, 44, CREAM, "Black", shadow=0), x, base_y + 40)
+        ps = prog(t, chunk_start(10, 1) + 0.5, 0.16)
+        if ps > 0:
+            sc = 2.2 - 1.2 * ps
+            paste(c, box(440, 150, 24, (250, 246, 236, 235), shadow=True), W / 2 - 10, 1000, sc, -8, clamp(ps * 3))
+            paste(c, stamp("또 1만 대!", 64), W / 2 - 10, 1000, sc, -8, clamp(ps * 3))
+        paste(c, text_img("판매 기준 · 뉴시스 보도", 30, (215, 215, 220), "SemiBold", shadow=2), W / 2, 1290)
+    else:                                                       # 11 첫 화면으로 돌아감 ("딱 하루")
+        back = in_out(prog(t, Ls(11) + 0.1, 0.9))
         hook(c, 0.0, back)
         shade_card(c, 0.3 * (1 - back))
-        p = out_back(prog(lt, 0.05, 0.3)) * (1 - prog(t, chunk_start(11, 1), 0.3))
-        sub = compose((box(420, 130, 65, RED, shadow=True), 0, 0), (text_img("구독", 76, WHITE, "Black", shadow=0), 0, -4))
-        paste(c, sub, W / 2, 900, p + 0.001, 0, clamp(p * 2))
     if cred:
         E2.credit_line(c, cred)
     E3.char_react(c, t)
@@ -266,8 +276,9 @@ def build_audio(voice):
     ev += [(hit, A.sfx_ding(), 0.7), (Ls(7), A.sfx_whoosh(0.35), 0.4), (Ls(8), A.sfx_whoosh(0.35), 0.4)]
     ev += [(Ls(8) + 0.3 + 1.4 * k / 14, tick_sfx(), 0.5) for k in range(14)]
     ev += [(chunk_start(8, 1) + 0.05, stamp_sfx(), 0.8), (chunk_start(9, 1) - 0.2, A.sfx_riser(0.9), 0.4),
-           (chunk_start(9, 1) + 0.6, A.sfx_impact(), 0.5), (Ls(10) + 0.1, A.sfx_pop(), 0.5),
-           (Ls(11) + 0.05, A.sfx_pop(), 0.5), (chunk_start(11, 1), A.sfx_whoosh(0.4), 0.35)]
+           (chunk_start(9, 1) + 0.6, A.sfx_impact(), 0.5), (Ls(10), A.sfx_whoosh(0.35), 0.4),
+           (chunk_start(10, 1) + 0.5, stamp_sfx(), 0.8), (Ls(11) + 0.1, A.sfx_riser(0.8), 0.3),
+           (chunk_start(11, 1), A.sfx_impact(), 0.4)]
     fx = np.zeros(n)
     for t0, snd, g in ev:
         i = int(max(0, t0) * sr)
