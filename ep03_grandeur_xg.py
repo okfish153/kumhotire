@@ -28,7 +28,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 VOICE_DIR = os.path.join(ROOT, "assets", "voice", "ep03")
 BUILD = os.path.join(ROOT, "build", "ep03_video")
 OUT = os.path.join(ROOT, "output", "ep03_grandeur_xg_1min.mp4")
-TITLE = ("새 그랜저가 *700만 원* 쌌다?", "1998 그랜저 XG *2,200만 원대*")
+TITLE = ("회장님 *뒷자리* 차에서", "*내가 직접 모는 차*로?")
 FPS = 30
 TAIL = 0.45
 GAP = 0.42                                   # 문장 사이 쉼
@@ -43,19 +43,19 @@ PHOTOS = {   # 파일, 쓸 영역, 번호판(흐림), 크레딧
 }
 
 CAPS = [
-    ["새 그랜저가", "*700만 원* 가까이 쌌습니다"],
+    ["*회장님 뒷자리* 차가,", "*내가 모는 차*가 됐습니다"],
     ["1998년, *그랜저 XG*"],
     ["근데 이 차,", "*문*을 열면 깜짝 놀라요"],
     ["자, 퀴즈!", "뉴 그랜저 최고급이 *3,490만 원*", "XG는요?"],
-    ["정답,", "*2,200만~2,700만 원대*"],
+    ["정답,", "*2,200만~2,700만 원대*", "*700만 원* 가까이 쌌죠"],
     ["그 시절엔 말이죠,", "*외환위기* 한가운데였어요"],
     ["신입 월급마저 *줄던* 해였죠", "…짜장면도 못 먹고요"],
-    ["그래도 *회장님 뒷자리* 차에서,", "*내가 직접 모는* 차가 됐죠"],
+    ["그렇게 *회장님 뒷자리* 차가,", "*내가 운전석*에 앉는 차가 됐죠"],
     ["아까 그 문,", "창틀이 없는 *프레임리스 도어*", "유리만 쏙!"],
     ["여러분 *아버지 차*는 뭐였어요?", "댓글로 알려 주세요"],
-    ["구독해 두시면", "옛날 차 이야기, 계속 들려드릴게요", "그럼 새 그랜저가 얼마나 쌌냐면요,"],
+    ["구독해 두시면", "옛날 차 이야기, 계속 들려드릴게요", "그러니까 이 차는요,"],
 ]
-MOTIONS = ["shock", "nod", "secret", ["talk", "think", "think"], "jump", "talk", ["awkward", "awkward"],
+MOTIONS = [["secret", "key_spin"], "nod", "secret", ["talk", "think", "think"], "jump", "talk", ["awkward", "awkward"],
            ["talk", "key_spin"], ["point_down", "point_down", "cheer"], "point_down", ["cheer", "talk", "idle"]]
 CHAR_H, CHAR_X, CHAR_FOOT = 300, 950, 1405
 TL = E2.TL                                   # ep02 자막·차형 함수가 같은 타임라인을 보게 함
@@ -176,25 +176,55 @@ def char_react(c, t):
 
 
 # ------------------------------------------------------------------ 장면
+HOOK_BOX = (200, 230, 1100, 960)
+
+
+def to_card(sx, sy, zoom=1.0, fx=0.5, fy=0.5, box_=HOOK_BOX):
+    """원본 사진 좌표 → 화면 좌표 (put_card 기준)"""
+    bl, bt, br, bb = box_
+    bw, bh = br - bl, bb - bt
+    sc = max(CARD_W / bw, CARD_H / bh) * zoom
+    cw, ch = CARD_W / sc, CARD_H / sc
+    l = bl + clamp(fx * bw - cw / 2, 0, bw - cw)
+    t = bt + clamp(fy * bh - ch / 2, 0, bh - ch)
+    return (W - CARD_W) / 2 + (sx - l) * sc, G.CARD_Y - CARD_H / 2 + (sy - t) * sc
+
+
 def hook(c, t, back=1.0):
-    """1번(그리고 끝에서 돌아오는) 첫 화면: 흰 XG + 가격 비교"""
-    put_card(c, xcard("white", 1.0 + 0.04 * in_out(prog(t, 0, 3)), 0.55, 0.55))
-    shade_card(c, 0.35)
+    """1번(그리고 끝에서 돌아오는) 첫 화면: 검정 Q30 + 뒷자리(회장님) → 운전대(나)"""
+    z = 1.0 + 0.04 * in_out(prog(t, 0, 3))
+    inner = cover(pic("black"), CARD_W, CARD_H, z, 0.5, 0.45, HOOK_BOX)
+    inner.putalpha(G.card_mask())
+    put_card(c, inner)
+    shade_card(c, 0.28)
     a = clamp(back)
-    old = price_tag("3,490만", "1992 뉴 그랜저 최고급", (190, 186, 180))
-    new = price_tag("2,700만 원대", "1998 그랜저 XG 최고급", YEL)
-    paste(c, old, W / 2 - 170, 640, 0.72, -3, a)
-    strike(c, W / 2 - 170, 640, 330, a)                     # 첫 화면(썸네일)에 비교가 다 보이게
-    paste(c, new, W / 2 + 120, 840, 0.82 * (1 + 0.04 * math.sin(t * 6) * (t < 2)), 3, a)
-    pd = out_back(prog(t, chunk_start(1, 1) + 0.1, 0.25))
-    if pd > 0:
-        paste(c, stamp("700만 원 가까이 ↓", 54), W / 2 - 80, 1090, 2.0 - 1.0 * pd, -6, clamp(pd * 3) * a)
+    if a <= 0:
+        return
+    rx, ry = to_card(865, 505, z, 0.5, 0.45)          # 뒷좌석 창
+    wx, wy = to_card(590, 500, z, 0.5, 0.45)          # 앞유리(운전대 쪽)
+    ring = Image.new("RGBA", (260, 170), (0, 0, 0, 0))
+    ImageDraw.Draw(ring).ellipse((8, 8, 252, 162), outline=YEL, width=12)
+    paste(c, ring, rx, ry, 1, 0, a)
+    paste(c, label("회장님 자리", 360, (60, 60, 66), WHITE, 50), rx + 10, ry + 105, 0.9, 3, a)
+    # 뒷자리 → 운전대 쪽 굽은 화살표
+    pts = [(rx - 90 + (wx + 70 - rx + 90) * k / 20, ry - 110 - 120 * math.sin(math.pi * k / 20)) for k in range(21)]
+    pts = [(x, y) for x, y in pts]
+    ov = Image.new("RGBA", c.size, (0, 0, 0, 0))
+    d = ImageDraw.Draw(ov)
+    d.line(pts, fill=(0, 0, 0, 200), width=26, joint="curve")
+    d.line(pts, fill=YEL + (255,), width=16, joint="curve")
+    ex, ey = pts[-1]
+    d.polygon([(ex - 32, ey - 36), (ex + 32, ey - 36), (ex, ey + 20)], fill=YEL + (255,), outline=(0, 0, 0))
+    if a < 1:
+        ov.putalpha(ov.getchannel("A").point(lambda v: int(v * a)))
+    c.alpha_composite(ov)
+    paste(c, label("내가 운전대를?", 470, AMBER, INK, 58), wx - 60, wy + 240, 1, -3, a)
 
 
 def frame(i):
     t = i / FPS
     c = E2.title_band().copy()
-    cred = PHOTOS["white"][3]
+    cred = PHOTOS["black"][3]
     if t < Ls(2) - 0.05:                                        # 1 훅
         hook(c, t)
     elif t < Ls(3) - 0.05:                                      # 2 1998 그랜저 XG (뒷모습 XG 배지)
@@ -237,6 +267,9 @@ def frame(i):
         txt = "2,200만~2,700만 원대" if t >= hit + 0.7 else f"2,200만~{v:,}만"
         paste(c, text_img(txt, 78, YEL, "Black", stroke=6, sfill=(0, 0, 0), shadow=8), W / 2 - 60 + dx, 1000 + dy, 1, 0,
               clamp((t - hit) * 4))
+        ps = prog(t, chunk_start(5, 2) + 0.05, 0.16)
+        if ps > 0:
+            paste(c, stamp("700만 원 가까이 ↓", 52), W / 2 - 60, 1200, 2.0 - 1.0 * ps, -6, clamp(ps * 3))
         paste(c, text_img("Q25 · Q25 SE · Q30 · 출시 발표 때 · 한국일보 1998-09-24", 30, CREAM, "Bold", stroke=4,
                           sfill=(0, 0, 0)), W / 2 - 60, 1100, 1, 0, prog(t, hit + 0.5, 0.3))
     elif t < Ls(7) - 0.05:                                      # 6 외환위기
@@ -311,6 +344,7 @@ def frame(i):
                 paste(c, stamp("유리만 쏙", 60), W / 2 + 230, 1150, 2.2 - 1.2 * ps, -6, clamp(ps * 3))
     elif t < Ls(11) - 0.05:                                     # 10 댓글
         lt = t - Ls(10)
+        cred = PHOTOS["white"][3]
         put_card(c, xcard("white", 1.02))
         shade_card(c, 0.5)
         pb = out_back(prog(lt, 0.1, 0.3))
@@ -320,11 +354,8 @@ def frame(i):
     else:                                                       # 11 구독 → 첫 화면으로
         lt = t - Ls(11)
         back = in_out(prog(t, chunk_start(11, 2), 0.8))
-        if back <= 0:
-            put_card(c, xcard("white", 1.0))
-            shade_card(c, 0.45)
-        else:                                                   # 첫 화면으로 서서히 돌아감
-            hook(c, 0.0, back)
+        hook(c, 0.0, back)                                      # 첫 화면 사진 위에서 표시가 서서히 돌아옴
+        shade_card(c, 0.3 * (1 - back))
         p = out_back(prog(lt, 0.05, 0.3)) * (1 - prog(t, chunk_start(11, 2), 0.3))
         sub = compose((box(420, 130, 65, RED, shadow=True), 0, 0), (text_img("구독", 76, WHITE, "Black", shadow=0), 0, -4))
         paste(c, sub, W / 2, 900, p + 0.001, 0, clamp(p * 2))
@@ -346,12 +377,12 @@ def build_audio(voice):
     music = retro_bgm(TL["total"] + 1.0)[:n]
     act = np.convolve((np.abs(v) > 0.02).astype(float), np.ones(int(0.3 * sr)) / int(0.3 * sr), mode="same")
     music = music * (1 - 0.55 * np.clip(act * 4, 0, 1))[:, None] * 0.7
-    ev = [(0.35, A.sfx_whoosh(0.3), 0.4), (0.55, A.sfx_pop(), 0.5), (chunk_start(1, 1) + 0.1, stamp_sfx(), 0.7),
+    ev = [(0.35, A.sfx_whoosh(0.3), 0.4), (0.55, A.sfx_pop(), 0.5), (chunk_start(1, 1) + 0.1, A.sfx_pop(), 0.6),
           (Ls(2), A.sfx_whoosh(0.35), 0.4), (chunk_start(3, 1), A.sfx_riser(0.8), 0.35),
           (Ls(4), A.sfx_ding(), 0.5)]
     ev += [(chunk_start(4, 2) + 0.12 * k, A.sfx_pop(), 0.5) for k in range(3)]
     hit = chunk_start(5, 1)
-    ev += [(hit - 0.02, A.sfx_ding(), 0.7), (hit + 0.05, calc_sfx(), 0.8), (Ls(6), A.sfx_whoosh(0.35), 0.4),
+    ev += [(chunk_start(5, 2) + 0.05, stamp_sfx(), 0.7), (hit - 0.02, A.sfx_ding(), 0.7), (hit + 0.05, calc_sfx(), 0.8), (Ls(6), A.sfx_whoosh(0.35), 0.4),
            (chunk_start(6, 1) + 0.1, stamp_sfx(), 0.8), (Ls(7) + 0.9, A.sfx_pop(), 0.5),
            (chunk_start(7, 1) + 0.3, stamp_sfx(), 0.6), (Ls(8), A.sfx_whoosh(0.35), 0.4),
            (chunk_start(8, 1) - 0.1, A.sfx_riser(0.6), 0.35), (chunk_start(8, 1) + 0.5, A.sfx_pop(), 0.6),
