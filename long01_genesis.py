@@ -396,8 +396,12 @@ def scene(c, k, t):
     lt = t - Ls(k)
     cr = None
     if k == 1:
-        cr = full_photo(c, "gv80_white", 0, t, (1.15, 1.05), (0.5, 0.5), dark=0.35)
-        pop(c, tag("2021.2 · 미국 로스앤젤레스", (250, 246, 236), INK, 52), W / 2, 420, Ls(1) + 0.2, t)
+        cr = full_photo(c, "gv80_white", 0, t, (1.15, 1.05), (0.5, 0.5), dark=0.5)
+        # 첫 화면: 처음부터 다 보이게(썸네일 역할), 살짝 들썩
+        pulse = 1 + 0.025 * math.sin(t * 6)
+        paste(c, rich_img("여러 번 구르고도 *운전자는 살았다*", 104, 11), W / 2 - 60, 300, pulse)
+        paste(c, rich_img("이젠 *지붕 에어백*까지", 104, 11), W / 2 - 60, 450, pulse)
+        pop(c, tag("2021.2 · 미국 로스앤젤레스", (250, 246, 236), INK, 46), W / 2 - 60, 610, Ls(1) + 0.6, t)
     elif k == 2:
         panel(c, (30, 26, 24))
         d = ImageDraw.Draw(c)
