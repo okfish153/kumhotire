@@ -27,13 +27,13 @@ CAPS = [
     ["2005년, *그랜저 TG*"],
     ["근데 *진짜 기록*은,", "그해 *겨울*에 나와요"],
     ["하루 계약으로는", "*승용차 사상 최고* 기록이었죠"],
-    ["자, 퀴즈!", "출시하고 *8영업일* 동안,", "몇 대나 계약됐을까요?"],
+    ["자, 퀴즈!", "출시하고 *8영업일* 동안,", "몇 대나 계약됐을까요?", "*하나*", "하나, *둘*", "하나, 둘, *셋!*"],
     ["정답, *1만 5,287대*"],
     ["그 시절엔 말이죠,", "*청계천*이 다시 흐르기 시작한 해였어요"],
     ["그리고 그해 *12월*, 한 달에 *1만 236대*", "그랜저 처음으로 *한 달 1만 대*를 넘었습니다"],
     ["회장님 차에서, *누구나 타고 싶은 차*로", "그랜저 *전성기*의 문이 열린 거죠"],
     ["그리고 이 차, 단종을 앞둔 *2009년*에도", "*두 번이나* 한 달 1만 대를 넘겼어요"],
-    ["근데 이 모든 기록의 시작은,", "*딱 하루*였어요"],
+    ["근데 이 모든 기록의", "시작이 *바로*,"],
 ]
 MOTIONS = ["shock", "nod", "secret", "jump", ["talk", "think", "think"], "cheer", "talk", ["shock", "key_spin"],
            ["cheer", "nod"], ["talk", "shock"], ["think", "secret"]]
@@ -54,6 +54,7 @@ E3.CAPS = E2.CAPS = CAPS
 E3.MOTIONS = E2.MOTIONS = MOTIONS
 E2.TITLE = TITLE
 E3.PHOTOS = PHOTOS
+E3.COUNT_AFTER = 5                           # 5번 퀴즈 뒤 하나, 둘, 셋
 TL = E2.TL
 Ls, Le, chunk_start, xcard = E2.Ls, E2.Le, E2.chunk_start, E3.xcard
 
@@ -169,9 +170,11 @@ def frame(i):
         paste(c, label("자, 퀴즈!", 420, RED, WHITE, 70), W / 2, 560, out_back(prog(lt, 0, 0.25)) + 0.001)
         paste(c, text_img("출시하고 8영업일 동안 계약은?", 50, CREAM, "Black", stroke=5, sfill=(0, 0, 0)),
               W / 2, 680, 1, 0, clamp((t - chunk_start(5, 1)) * 4))
+        beat = E3.countdown(c, t) or 1
         for k, txt in enumerate(["5천 대", "1만 대", "1만 5천 대"]):
             pk = out_back(prog(t, chunk_start(5, 2) + 0.12 * k, 0.25))
-            paste(c, option_chip(str(k + 1), txt), W / 2 - 80, 830 + k * 150, pk + 0.001, 0, clamp(pk * 2))
+            paste(c, option_chip(str(k + 1), txt), W / 2 - 80, 800 + k * 135, (pk + 0.001) * beat * 0.95, 0,
+                  clamp(pk * 2))
     elif t < Ls(7) - 0.05:                                      # 6 정답 15,287대
         lt = t - Ls(6)
         cred = None
@@ -271,6 +274,7 @@ def build_audio(voice):
     ev = [(0.05, A.sfx_impact(), 0.5), (Ls(2), A.sfx_whoosh(0.35), 0.4), (chunk_start(3, 1), A.sfx_riser(0.8), 0.35),
           (chunk_start(4, 1) + 0.05, stamp_sfx(), 0.8), (Ls(5), A.sfx_ding(), 0.5)]
     ev += [(chunk_start(5, 2) + 0.12 * k, A.sfx_pop(), 0.5) for k in range(3)]
+    ev += [(st - 0.05, tick_sfx(), 0.9) for st, _ in TL["count"]]
     hit = Ls(6) + 0.35
     ev += [(hit - 0.2 + 0.8 * k / 12, tick_sfx(), 0.5) for k in range(12)]
     ev += [(hit, A.sfx_ding(), 0.7), (Ls(7), A.sfx_whoosh(0.35), 0.4), (Ls(8), A.sfx_whoosh(0.35), 0.4)]

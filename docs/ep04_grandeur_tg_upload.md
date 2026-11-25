@@ -1,6 +1,6 @@
 # EP04 그랜저 TG 1분 쇼츠 — 업로드 글 (SNS별)
 
-- 영상: `output/ep04_grandeur_tg_1min.mp4` (1080×1920, 30fps, 43.7초, -14 LUFS)
+- 영상: `output/ep04_grandeur_tg_1min.mp4` (1080×1920, 30fps, 48.4초, -14 LUFS)
 - 자막 파일: `output/ep04_grandeur_tg_1min.srt`
 - 다시 만들기: `python3 tools/tts_lines.py docs/ep04_grandeur_tg_script.md assets/voice/ep04` → `python3 ep04_grandeur_tg.py`
 - 목소리: 구글 클라우드 TTS `ko-KR-Chirp3-HD-Algenib` (AI 음성)

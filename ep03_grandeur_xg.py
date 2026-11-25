@@ -30,7 +30,9 @@ BUILD = os.path.join(ROOT, "build", "ep03_video")
 OUT = os.path.join(ROOT, "output", "ep03_grandeur_xg_1min.mp4")
 TITLE = ("회장님 *뒷자리* 차에서", "*내가 직접 모는 차*로?")
 FPS = 30
-TAIL = 0.45
+TAIL = 0.2                                   # 끝과 처음 사이를 짧게 (반복 재생이 끊기지 않게)
+COUNT_AFTER = 4                              # 이 문장(퀴즈) 뒤에 '하나, 둘, 셋' 카운트다운
+COUNT_WORDS = ("하나", "둘", "셋!")
 GAP = 0.42                                   # 문장 사이 쉼
 IMG = os.path.join(ROOT, "assets", "images")
 PHOTOS = {   # 파일, 쓸 영역, 번호판(흐림), 크레딧
@@ -46,14 +48,14 @@ CAPS = [
     ["*회장님 뒷자리* 차가,", "*내가 모는 차*가 됐습니다"],
     ["1998년, *그랜저 XG*"],
     ["근데 이 차,", "*문*을 열면 깜짝 놀라요"],
-    ["자, 퀴즈!", "뉴 그랜저 최고급이 *3,490만 원*", "XG는요?"],
+    ["자, 퀴즈!", "뉴 그랜저 최고급이 *3,490만 원*", "XG는요?", "*하나*", "하나, *둘*", "하나, 둘, *셋!*"],
     ["정답,", "*2,200만~2,700만 원대*", "*700만 원* 가까이 쌌죠"],
     ["그 시절엔 말이죠,", "*외환위기* 한가운데였어요"],
     ["신입 월급마저 *줄던* 해였죠", "…짜장면도 못 먹고요"],
     ["그렇게 *회장님 뒷자리* 차가,", "*내가 운전석*에 앉는 차가 됐죠"],
     ["아까 그 문,", "창틀이 없는 *프레임리스 도어*", "유리만 쏙!"],
     ["그리고 XG는,", "현대가 *직접 개발한 엔진*을 앞세운", "*첫 그랜저*였어요"],
-    ["근데 그거 아세요?", "원래 *그랜저*는요,"],
+    ["근데 그거 아세요?", "이 *그랜저 XG*부터,"],
 ]
 MOTIONS = [["secret", "key_spin"], "nod", "secret", ["talk", "think", "think"], "jump", "talk", ["awkward", "awkward"],
            ["talk", "key_spin"], ["point_down", "point_down", "cheer"], ["talk", "key_spin", "jump"], ["think", "secret"]]
@@ -65,28 +67,67 @@ E2.MOTIONS = MOTIONS
 
 
 # ------------------------------------------------------------------ 목소리·타임라인
+def speech_runs(a, thr=0.02, join=0.12):
+    """소리 나는 구간들 (초) — 카운트다운 박자 찾기"""
+    hop = A.SR // 100
+    on = [np.abs(a[i:i + hop]).max() > thr for i in range(0, len(a), hop)]
+    runs, s = [], None
+    for i, v in enumerate(on + [False]):
+        if v and s is None:
+            s = i
+        if not v and s is not None:
+            if runs and (s - runs[-1][1]) / 100 < join:
+                runs[-1] = (runs[-1][0], i)
+            else:
+                runs.append((s, i))
+            s = None
+    return [(x / 100, y / 100) for x, y in runs]
+
+
 def load_timeline():
     files = [os.path.join(VOICE_DIR, f"line_{k:02d}.wav") for k in range(1, len(CAPS) + 1)]
     missing = [f for f in files if not os.path.exists(f)]
     assert not missing, f"음성 파일 없음: {missing[:2]} … tools/tts_lines.py로 만든다"
     parts, lines, t = [], [], 0.12
     parts.append(np.zeros(int(t * A.SR)))
-    for f in files:
-        a = A.read_wav(f)
+    def trim(a):
         nz = np.nonzero(np.abs(a) > 0.01)[0]                  # 앞뒤 무음 자르기
-        a = a[max(0, nz[0] - 600): nz[-1] + 1500] if len(nz) else a
-        lines.append((round(t, 3), round(t + len(a) / A.SR, 3)))
-        parts += [a, np.zeros(int(GAP * A.SR))]
-        t += len(a) / A.SR + GAP
+        return a[max(0, nz[0] - 600): nz[-1] + 1500] if len(nz) else a
+
+    count, speech_end = [], {}
+    for k, f in enumerate(files, 1):
+        a = trim(A.read_wav(f))
+        st = t
+        parts.append(a)
+        t += len(a) / A.SR
+        if k == COUNT_AFTER:                                  # 퀴즈 뒤 하나, 둘, 셋 (한 박자씩)
+            speech_end[k] = t
+            cw = trim(A.read_wav(os.path.join(VOICE_DIR, "count.wav")))   # "하나... 둘... 셋!" 한 파일
+            parts.append(np.zeros(int(0.45 * A.SR)))
+            t += 0.45
+            for s0, s1 in speech_runs(cw):
+                count.append((round(t + s0, 3), round(t + s1, 3)))
+            assert len(count) == len(COUNT_WORDS), f"카운트다운 박자 {len(count)}개"
+            parts.append(cw)
+            t += len(cw) / A.SR
+        lines.append((round(st, 3), round(t, 3)))
+        parts.append(np.zeros(int(GAP * A.SR)))
+        t += GAP
     voice = np.concatenate(parts[:-1])
     chunks = []
-    for (st, en), caps in zip(lines, CAPS):
+    for k, ((st, en), caps) in enumerate(zip(lines, CAPS), 1):
+        if k == COUNT_AFTER:
+            n = len(COUNT_WORDS)
+            caps, en = caps[:-n], speech_end[k]
         w = [max(4, len(c.replace("*", ""))) for c in caps]
         acc = st
-        for c, k in zip(caps, w):
-            d = (en - st) * k / sum(w)
+        for c, q in zip(caps, w):
+            d = (en - st) * q / sum(w)
             chunks.append((acc, acc + d, c))
             acc += d
+        if k == COUNT_AFTER:
+            for j, c in enumerate(CAPS[k - 1][-n:]):
+                chunks.append((count[j][0] - 0.1, (count[j + 1][0] - 0.1) if j + 1 < n else lines[k - 1][1], c))
     total = round(len(voice) / A.SR + TAIL, 2)
     hop = A.SR // FPS
     n = int(total * FPS) + 1
@@ -94,7 +135,7 @@ def load_timeline():
                     for i in range(n)])
     rms = np.convolve(rms, np.ones(3) / 3, mode="same")
     energy = np.clip(rms / (np.percentile(rms[rms > 0], 95) + 1e-9), 0, 1).round(3).tolist()
-    TL.update(lines=lines, chunks=chunks, total=total, energy=energy, preview=False)
+    TL.update(lines=lines, chunks=chunks, total=total, energy=energy, preview=False, count=count)
     return voice
 
 
@@ -168,6 +209,24 @@ def paper(w=900, h=420):
         y = 250 + k * 30
         d.line((40, y, w - 40 - (k % 2) * 160, y), fill=(150, 140, 120), width=8)
     return im
+
+
+def countdown(c, t, x=W / 2 - 60, y=1185):
+    """퀴즈 뒤 '하나, 둘, 셋!' — 박자마다 큰 원이 튀어나옴"""
+    cnt = TL.get("count") or []
+    j = max([q for q, (st, _) in enumerate(cnt) if t >= st - 0.08] or [-1])
+    if j < 0:
+        return 0
+    p = out_back(prog(t, cnt[j][0] - 0.08, 0.22))
+    fill = YEL if j == len(cnt) - 1 else (250, 246, 236)
+    disk = compose((box(230, 230, 115, fill, INK, 8, True), 0, 0),
+                   (text_img(COUNT_WORDS[j], 92, INK, "Black", shadow=0), 0, -4))
+    paste(c, disk, x, y, 0.6 + 0.4 * p, (j - 1) * 6)
+    for q in range(len(cnt)):                                 # 작은 점 3개
+        on = q <= j
+        ImageDraw.Draw(c).ellipse((x - 60 + q * 60 - 12, y + 128 - 12, x - 60 + q * 60 + 12, y + 128 + 12),
+                                  fill=YEL if on else (90, 90, 96))
+    return 1 + 0.04 * (1 - p)                                 # 보기 칩이 박자에 맞춰 살짝 들썩
 
 
 def char_react(c, t):
@@ -250,9 +309,11 @@ def frame(i):
         pb = clamp((t - chunk_start(4, 1)) * 4)
         paste(c, text_img("뉴 그랜저 최고급 = 3,490만 원", 50, CREAM, "Black", stroke=5, sfill=(0, 0, 0)),
               W / 2, 680, 1, 0, pb)
+        beat = countdown(c, t) or 1
         for k, txt in enumerate(["2천만 원대", "3천만 원대", "4천만 원대"]):
             pk = out_back(prog(t, chunk_start(4, 2) + 0.12 * k, 0.25))
-            paste(c, option_chip(str(k + 1), txt), W / 2 - 80, 830 + k * 150, pk + 0.001, 0, clamp(pk * 2))
+            paste(c, option_chip(str(k + 1), txt), W / 2 - 80, 800 + k * 135, (pk + 0.001) * beat * 0.95, 0,
+                  clamp(pk * 2))
     elif t < Ls(6) - 0.05:                                      # 5 정답
         lt = t - Ls(5)
         cred = None
@@ -382,6 +443,7 @@ def build_audio(voice):
           (Ls(2), A.sfx_whoosh(0.35), 0.4), (chunk_start(3, 1), A.sfx_riser(0.8), 0.35),
           (Ls(4), A.sfx_ding(), 0.5)]
     ev += [(chunk_start(4, 2) + 0.12 * k, A.sfx_pop(), 0.5) for k in range(3)]
+    ev += [(st - 0.05, tick_sfx(), 0.9) for st, _ in TL["count"]]
     hit = chunk_start(5, 1)
     ev += [(chunk_start(5, 2) + 0.05, stamp_sfx(), 0.7), (hit - 0.02, A.sfx_ding(), 0.7), (hit + 0.05, calc_sfx(), 0.8), (Ls(6), A.sfx_whoosh(0.35), 0.4),
            (chunk_start(6, 1) + 0.1, stamp_sfx(), 0.8), (Ls(7) + 0.9, A.sfx_pop(), 0.5),

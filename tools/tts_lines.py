@@ -36,9 +36,14 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("script"); ap.add_argument("outdir")
     ap.add_argument("--voice", default=VOICE); ap.add_argument("--rate", type=float, default=1.05)
+    ap.add_argument("--no-count", action="store_true", help="퀴즈 카운트다운(count.wav)을 만들지 않음")
     a = ap.parse_args()
     os.makedirs(a.outdir, exist_ok=True)
     for k, t in enumerate(script_lines(a.script), 1):
         p = os.path.join(a.outdir, f"line_{k:02d}.wav")
         synth(t, a.voice, p, a.rate)
         print(p, t)
+    if not a.no_count:                     # 퀴즈 뒤 카운트다운: 한 파일로 만들어야 박자가 자연스럽다
+        p = os.path.join(a.outdir, "count.wav")
+        synth("하나... 둘... 셋!", a.voice, p, 0.9)
+        print(p, "하나... 둘... 셋!")

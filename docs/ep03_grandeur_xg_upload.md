@@ -1,6 +1,6 @@
 # EP03 그랜저 XG 1분 쇼츠 — 업로드 글 (SNS별)
 
-- 영상: `output/ep03_grandeur_xg_1min.mp4` (1080×1920, 30fps, 44.7초, -14 LUFS)
+- 영상: `output/ep03_grandeur_xg_1min.mp4` (1080×1920, 30fps, 45.8초, -14 LUFS)
 - 자막 파일: `output/ep03_grandeur_xg_1min.srt`
 - 다시 만들기: `python3 tools/tts_lines.py docs/ep03_grandeur_xg_script.md assets/voice/ep03` → `python3 ep03_grandeur_xg.py`
 - 목소리: 구글 클라우드 TTS `ko-KR-Chirp3-HD-Algenib` (AI 음성, 사용자 선택)
