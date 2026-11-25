@@ -5,6 +5,9 @@
 | ep1 | 타이어, 아직도 가격만 보고 바꾸세요? | `output/kumho_songwol_shorts.mp4` | `python3 make_video.py` |
 | ep2 | 타이어 4개 바꾸려는데… 왜 이렇게 비싸? | `output/kumho_songwol_shorts_ep2.mp4` | `python3 make_video.py --ep ep2` |
 | ep2c | ep2의 귀여운 애니메이션 버전 (마스코트 '타이어 친구', 파스텔, Jua 폰트, 귀여운 BGM, 여성 음성) | `output/kumho_songwol_shorts_ep2_cute.mp4` | `python3 make_video.py --ep ep2c` |
+| 그랜저 40년 2/8 | 각그랜저는 왜 부의 상징이 됐을까? (정보형, 매장 홍보 없음) | `output/grandeur40_02_gak_grandeur.mp4` · 업로드 문구 `docs/ep_grandeur_02_upload.md` | `python3 ep_grandeur2.py` |
+| 그랜저 40년 3/8 | 각이 사라진 2세대 뉴 그랜저 (정보형, 실차 사진) | `output/grandeur40_03_new_grandeur.mp4` · 업로드 문구 `docs/ep_grandeur_03_upload.md` | `python3 ep_grandeur3.py` |
+| 그랜저 40년 4/8 | IMF 한파 속 3세대 그랜저 XG (정보형, 그래픽 버전) | `output/grandeur40_04_grandeur_xg.mp4` · 업로드 문구 `docs/ep_grandeur_04_upload.md` | `python3 ep_grandeur4.py` |
 
 새 에피소드는 `ep2.py`를 복사해 대본(LINES/CHUNKS)과 장면 함수를 바꾸면 됩니다.
 
