@@ -1,6 +1,6 @@
 # 인수인계: 차를 읽는 시간 (2026-11-26 정리, 새 세션 시작용)
 
-새 세션은 **`CLAUDE.md`(작업 규칙)를 먼저** 따르고, 이 문서로 현재 상태를 이어받는다.
+새 세션은 루트 **`CLAUDE.md`(공통 규칙·채널 구분)** → **`channels/car/CLAUDE.md`(이 채널 규칙)** 순서로 읽고, 이 문서로 현재 상태를 이어받는다. 이 저장소에는 「추억을 읽는 시간」(`channels/chueok/`)도 있으니 섞지 않는다.
 중복 확인은 `docs/content_registry.csv`(= 드라이브 `00_채널 기본/콘텐츠 목록 (중복 확인용)` 시트).
 
 ## 1. 한눈에 보기
@@ -12,7 +12,7 @@
 | 목소리 | EP03부터 구글 클라우드 TTS `ko-KR-Chirp3-HD-Algenib` (`tools/tts_lines.py`, 퀴즈 카운트다운 `count.wav` 함께 생성). EP01·02는 사용자 녹음 |
 | 저장소 | okfish153/kumhotire — 작업 브랜치 `claude/drive-docs-v2-1-ecoymf`, 기본 브랜치 `claude/youtube-shorts-reels-video-pbpz19` (2026-11-26 두 브랜치 같은 상태로 합침) |
 | 드라이브 | 「차를 읽는 시간」 1EKsBRwyZf-EsKgm0J5q_4erkElSWGduQ |
-| 매일 브리핑 | 예약 작업 「자동차 아침 브리핑」 trig_01BTMpMweRUxfybf4wLoX8fF — 매일 한국 시간 4:51 시작, 휴대폰 푸시. 지난 24시간 자동차 소식 + 채널 아이디어 3개(콘텐츠 목록으로 중복 표시) |
+| 매일 브리핑 | 예약 작업 「[차] 자동차 아침 브리핑」 trig_01BTMpMweRUxfybf4wLoX8fF — 매일 한국 시간 4:51 시작, 휴대폰 푸시. 지난 24시간 자동차 소식 + 채널 아이디어 3개(콘텐츠 목록으로 중복 표시) |
 
 ## 2. 완성된 콘텐츠 (자세한 내용은 콘텐츠 목록)
 
