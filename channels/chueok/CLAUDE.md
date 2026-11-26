@@ -2,7 +2,7 @@
 
 > 이 파일은 「추억을 읽는 시간」 세션에서만 따른다. 공통 규칙은 저장소 루트 `CLAUDE.md`.
 > 작업은 **`channels/chueok/` 안에서만** 한다 (대본 `docs/`, 사진·음성 `assets/`, 결과 `output/`, 코드 `*.py`).
-> 「차를 읽는 시간」의 `docs/`·`output/`·`ep*.py`·드라이브는 읽거나 고치지 않는다. 공통 도구(`tools/`, `video.py`, `audio.py`)는 가져다 쓰기만 한다.
+> 「차를 읽는 시간」의 `docs/`·`output/`·`ep*.py`·드라이브는 읽거나 고치지 않는다(예외: `HANDOFF.md` 6번의 완성 예시는 구조 참고용으로 **읽기만**). 공통 도구(`tools/`, `video.py`, `audio.py`)는 가져다 쓰기만 한다.
 
 ## 채널
 
@@ -25,7 +25,7 @@
 | 교훈·체크리스트 | `channels/chueok/docs/lessons.md` |
 | 드라이브 최상위 | 「추억을 읽는 시간」 1qXkcZSBmAca0fHF8-9Asc7sUE7jhY7hb |
 | 드라이브 하위 | 00_채널 기본 1OHuZc5ZjMqSN3UqW-C7xoK4MD1gEUT_Y · 01_캐릭터 1NjLFIxYWCT702bAjemE60onnl8udd9ZG · 03_에피소드 1BoroJ3JqwTAmF-u7azdDCHCQ39SvKpwN · 04_완성 영상 모음 1w68zf3WvXNklY5FrYy-SHgTrI96RXZuL · 05_롱폼·블로그 1gZ12hJHTAMiu5NamySZhUhAV6EH3oJPa · 99_자료 출처 1bef7pbdGCTHsyWig5R-6ZKE7aWSvIm7g |
-| 아침 브리핑 | 예약 작업 「추억 아침 브리핑」 (매일 4:41 시작, 휴대폰 푸시) |
+| 아침 브리핑 | 예약 작업 「[추억] 추억 아침 브리핑」 trig_01TLVx5X2vut4cUJANGsSctj (매일 4:41 시작, 휴대폰 푸시) |
 
 ## 파일 이름
 
