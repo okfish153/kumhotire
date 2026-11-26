@@ -11,8 +11,8 @@
 - **말투:** 존댓말 + 편한 수다체. 시그니처 "그 시절엔 말이죠"
 - **특기:** 그 시절 값을 짜장면 값·신입 월급·버스 요금 같은 생활 물가로 바꿔 보는 '그 시절 vs 지금'. 환산은 방법을 밝힌다("물가 환산이 아니라 ○○값 환산")
 - **훅의 출발점:** 오늘 이슈 → "그 시절에는?" (예: 오늘 라면값 인상 → 1980년대 라면 한 봉지 값)
-- **캐릭터:** 미정. 정하면 기준 그림 한 장(`assets/character/`)을 고정해 그 그림만 움직인다. 정하기 전에는 해설 목소리 + 그래픽
-- **목소리:** 미정. 구글 클라우드 TTS(`tools/tts_lines.py --voice …`)를 쓰되, 차 채널(Algenib)과 **다른 목소리**로 정한다. 정하면 이 줄을 고친다
+- **캐릭터:** **꼬망** (2026-11-26 확정). 손녀·손자 같은 귀여운 분위기의 해설자. 가족 역할로 고정하지 않고, 이야기에 따라 할아버지·할머니·엄마·아빠·삼촌·이모를 소품만 바꿔 연기. 설정서 `docs/character_kkomang.md`. 기준 그림 한 장(`assets/character/kkomang_base.png`)을 고정해 그 그림만 움직인다
+- **목소리 (꼬망):** 구글 TTS `ko-KR-Chirp3-HD-Leda`, 속도 1.05 → 높이 4음 올림(asetrate 방식, 떨림 없음). 반드시 `python3 channels/chueok/kkomang_voice.py <대본.md> <음성 폴더>`로 만든다(카운트다운 `count.wav` 포함). 견본 `assets/voice/samples/꼬망_인사.mp3`
 - **해시태그 마지막:** `#추억을읽는시간`
 
 ## 위치
@@ -41,6 +41,6 @@
 2. 오늘 이슈 기사 + 그 시절 1차 자료(당시 신문, 통계청, 한국은행, 한국소비자원 참가격 등)로 근거 표
 3. 대본(11문장 안팎): 훅(오늘 이슈 × 그 시절) / 정체 / 미끼 / 퀴즈+하나둘셋 / 정답 / "그 시절엔 말이죠" / 비교 / 미끼 회수 / 흥미로운 사실 / 끝 문장(쉼표로 첫 문장에 이어짐) → 사용자 확인
 4. 사진(Commons) · 그 시절 풍경은 일러스트(사용자가 제미나이에서 만들어 올림, 초록 배경이면 `tools/green_key.py`)
-5. 음성 `python3 tools/tts_lines.py channels/chueok/docs/m001_…_script.md channels/chueok/assets/voice/m001 --voice <정한 목소리>`
+5. 음성 `python3 channels/chueok/kkomang_voice.py channels/chueok/docs/m001_…_script.md channels/chueok/assets/voice/m001`
 6. 영상: 차 채널의 `ep04_grandeur_tg.py` 구조를 복사해 `channels/chueok/m001_….py`로 (경로만 이 폴더로)
 7. 업로드 글 5종 → 드라이브 에피소드 폴더, 콘텐츠 목록에 한 줄 + 시트 교체, 커밋 메시지 `[추억] …`
