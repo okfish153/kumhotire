@@ -54,7 +54,6 @@
 ├─ 04_완성 영상 모음/                      1-WnBnyno0Qghmup15fVEr_CIKbw0rNsA
 ├─ 05_롱폼/                                1oMvMp3UEL2yXMk1Czqahh0ukWRhefXo5  L01·S01 업로드 글, 대본, 썸네일, 자막
 ├─ 06_블로그_제네시스시리즈/               1NlebKOJhjX7p38oz3dUL-WfqgPu0qXTE  원고 4편 + 이미지 17장
-├─ 07_ChatGPT_추억을읽는시간_이전키트/     ChatGPT용 정리본 (docs/chatgpt_kit/와 같은 내용)
 └─ 99_자료 출처/
 ```
 - 드라이브 커넥터는 한 번에 약 3.1MB까지만 올라감 → 영상(mp4)은 사용자가 직접 올림. 저장소에는 mp4도 커밋돼 있음(50MB 넘는 롱폼은 GitHub 경고만 뜸)
