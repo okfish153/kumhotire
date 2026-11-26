@@ -1,76 +1,80 @@
-# 인수인계: 차를 읽는 시간 (2026-11-22)
+# 인수인계: 차를 읽는 시간 (2026-11-26 정리, 새 세션 시작용)
 
-새 세션은 `CLAUDE.md`(작업 규칙)를 먼저 따르고, 이 문서로 진행 상황을 이어받는다.
+새 세션은 **`CLAUDE.md`(작업 규칙)를 먼저** 따르고, 이 문서로 현재 상태를 이어받는다.
+중복 확인은 `docs/content_registry.csv`(= 드라이브 `00_채널 기본/콘텐츠 목록 (중복 확인용)` 시트).
 
-## 다음 할 일 (우선순위)
-0. **캐릭터 IP화 1차: 완료 (2026-11-22).** `docs/ip/` 참고. 남은 일:
-   - **차형 의상 v3 (2026-11-22): 모자 없는 빨강·검정 레이싱 슈트 + 가슴 영문 CHAHYUNG.** 기준 그림 `assets/character/chahyung_v3_base.png`. 설정서 v3, 바이블 v1.2, 사용 가이드 v3, IP 이미지, CLAUDE.md, 상표·창작 기록을 저장소와 드라이브 모두 맞춤. EP01 영상도 새 차형으로 다시 렌더링함
-   - 바이블 `[제안]` 항목은 사용자가 모두 확정함
-   - 사용자: KIPRIS 검색, 제미나이 프롬프트·캡처 보관, 변리사 상담
-   - 디자이너: 벡터 초안을 다듬은 최종본 → 도형 상표 출원 + 저작권 등록 검토
-   - 기준 그림과 설정서가 다른 3곳은 그림 기준으로 확정해 설정서 v2.1에 반영함
-   - 각그랜저(EP01) 1분 쇼츠는 대본·녹음·영상 1차 완성(아래 3번)
-1. **구글 드라이브 정리: 완료 (2026-11-22).** 실제 구조는 아래와 같다. 차종이 늘면 `03_에피소드/` 아래에 차종 폴더를 추가한다.
-   ```
-   차를 읽는 시간/                         (1EKsBRwyZf-EsKgm0J5q_4erkElSWGduQ)
-   ├─ 00_채널 기본/                        채널 규칙(CLAUDE.md 사본), 진행 현황(HANDOFF)
-   ├─ 01_캐릭터_차형/                      설정서, chahyung_v3_base.png(v3 기준), chahyung_base.png(v2.1 기록), 테스트 이미지
-   ├─ 02_공통 소스/                        (비어 있음) BGM·효과음, 폰트, 자막 디자인, 로고
-   ├─ 03_에피소드/
-   │   └─ 그랜저/                          (1SuXgYM51elN5xfqkIdAUshuQp1z6_HSQ)
-   │       ├─ EP01_각그랜저/  (1smKi0hb34NXQxXtzsuuR5qsOvjgX3OgJ)
-   │       ├─ EP02_뉴그랜저/  (1FN7YXC6_NVil_L78xdkwBgSKjZ0sPVWS)
-   │       └─ EP03_그랜저XG/  (1TG6pmm8JQZNnvOcD_Y2KJezqPw0-6QYm)
-   ├─ 04_완성 영상 모음/                    '완성 영상 목록' 시트: 모든 완성 영상의 링크를 한곳에 모음
-   └─ 99_자료 출처/                        '자료 출처·라이선스 기록' 문서
-   ```
-   - 완성 영상 목록 시트: 1Knur5gzN4xDTp8X0NYcRs4PfGSkbxNahUhyl33NgcKo. 새 영상이 나오면 행을 추가하고 영상 링크와 유튜브 링크를 채운다.
-   - **영상(mp4)은 아직 드라이브에 없다.** 드라이브 커넥터는 한 번에 약 3.1MB까지만 보낼 수 있어서, 이보다 큰 영상과 원본 그림(`chahyung_base_raw.png`, `chahyung_v3_base_raw.png` 3.9MB)은 사용자가 직접 올려야 한다. Pretendard 폰트는 공식 배포처에서 언제든 받을 수 있어 올리지 않았다.
-   - GitHub 저장소: 제작 코드와 규칙
-   - 드라이브: 사람이 보고 꺼내 쓰는 보관함(완성 영상, 녹음, 그림, 업로드 문구, 라이선스)
-2. **차형 움직임 (방향 변경 2026-11-22):** 표정·동작 그림을 새로 만들지 않고, v3 기준 그림 한 장을 `tools/chahyung_motion.py`로 잘라 움직인다(동작 12가지 + 효과 그래픽). 그림이 꼭 필요할 때만 제미나이로 만든다.
-   - 우선순위: ① 표정 시트(얼굴 6개) ② 놀람·엄지척·가리키기 ③ 열쇠 돌리기·잡지 펼치기
-   - v3 기준 그림을 첨부하고 초록 배경으로 만든다. 배경 제거는 `python3 tools/green_key.py`. EP02용 동작별 프롬프트는 `docs/ep02_new_grandeur_plan.md`
-3. **각그랜저 1분 쇼츠 (EP01, 새 형식): 1차 완성 (2026-11-22)**
-   - 구성: 훅 → 2억 → 미끼(숨은 창) → 퀴즈 → 월급 → 각그랜저 → 회장님 차 → 미끼 회수(오페라 글라스) → 댓글 유도 → 구독 → 첫 문장으로 이어지는 끝 문장
-   - 사용자가 녹음한다. 틀리면 손뼉을 치고 그 문장을 다시 읽으며, 문장 사이는 2초 쉰다.
-   - 대본: `docs/ep01_gak_grandeur_script.md` (초안 2 채택, 13문장, 약 49~53초)
-   - 손뼉 감지 처리: `python3 tools/clap_cut.py 녹음파일 --script docs/ep01_gak_grandeur_script.md` → `build/<파일 이름>/voice_clean.wav`, 문장별 wav, `report.md`. 합성 손뼉 시험(다 읽고 손뼉, 중간에 멈추고 손뼉, 연속 두 번)은 통과했고, 실제 손뼉 녹음으로는 아직 확인하지 않았다
-   - 녹음 1차: `assets/voice/ep01/ep01_take1.aac` (손뼉 없음, 99.6초). `--no-clap --tempo 1.15 --gap 0.3 --inner-pause 0.25`로 13문장 57.5초. 조각 17개를 길이로 대본에 자동 배정(5·6·9번은 조각 2개). 사용자 확인함
-   - 영상 1차: `python3 ep01_gak_grandeur.py` → `output/ep01_gak_grandeur_1min.mp4` (57.8초, -14 LUFS) + `.srt`. 실사진은 Sim1992 각그랜저 뒷모습 1장뿐(오페라 글라스는 이 사진의 C필러 작은 창을 확대). 차형은 v3 기준 그림을 `tools/chahyung_motion.py`로 움직임: 문장마다 동작(놀람·끄덕·쉿·곰곰이·점프·머쓱·열쇠 돌리기·화살표 등) + 말소리에 맞춰 머리 들썩. 드라이브 업로드는 용량(약 11MB) 때문에 사용자가 직접 업로드 글은 `docs/ep01_gak_grandeur_upload.md`(유튜브·인스타·틱톡·네이버 클립·페이스북별 완성본, 이후 편의 기준 형식).
-   - 손뼉 오탐 주의: 이 녹음에서 센 자음·입소리 8곳이 손뼉으로 잡혀 조건을 강화함(중심 주파수 1.5kHz 이상, 앞뒤 조용). 그래도 5.02초 입소리 1곳은 잡히므로 손뼉을 안 쳤으면 `--no-clap`
-   - 고정 제목: "짜장면 28,000그릇 값?" / "지금 짜장면 값으론 2억!"
-   - 차형은 가운데 영상의 아래 구석에 반응용으로 넣는다. 출처 표기와 겹치지 않게 한다.
-4. **뉴그랜저 (EP02):** 계획 `docs/ep02_new_grandeur_plan.md` (A안 대본 "신입사원 월급 오 년 치" 채택). 녹음용 대본 `docs/ep02_new_grandeur_script.md`, 영상 코드 `ep02_new_grandeur.py` 완성. 녹음 1차 `assets/voice/ep02/ep02_take1.aac`(손뼉 없음, 81.9초) → `--no-clap`, 속도 1.0배로 11문장 53.9초. **영상 1차 완성:** `output/ep02_new_grandeur_1min.mp4` (54.3초, -14 LUFS) + `.srt`. 녹음 끝 0.42초 잡음은 자동 맞춤에서 건너뜀(clap_cut: 2초 넘게 떨어진 조각은 같은 문장으로 묶지 않고, 끝에 남은 짧은 잡음은 건너뜀). 실사진: 진녹색 정면 `grandeur_lx.jpg` = Commons "20100728 hyundai grandeur 01.jpg"(Chu, CC BY-SA 3.0, 픽셀 비교로 같은 사진 확인), 옆모습 `grandeur_lx_side_chu.jpg` = "20110723 hyundai grandeur 1.jpg"(Chu, CC BY-SA 3.0). 업로드 문구 `docs/ep02_new_grandeur_upload.md`. 차형은 문장마다 `chahyung_motion.py` 동작으로 반응한다
-5. 이후 그랜저 XG(EP03)를 같은 1분 형식으로 만든다. 사진 후보: `assets/images/grandeur_xg_benespit.jpg` = Commons "2000 Hyundai Grandeur (XG).jpg"(Benespit, CC BY-SA 4.0, 사용자가 고름)
+## 1. 한눈에 보기
 
-## 현재 결과물
-| 구분 | 파일 | 상태 |
-|---|---|---|
-| 30초 정보형 (이전 형식) | `output/grandeur40_02_gak_grandeur.mp4`, `_03_new_grandeur.mp4`, `_04_grandeur_xg.mp4` | 참고용. 새 형식으로 대체 예정 |
-| 업로드 문구 (이전 형식) | `docs/ep_grandeur_0{2,3,4}_upload.md` | 사실·출처·라이선스 정리는 재사용 가능 |
-| 목소리 시험 | `output/voice_test_title_layout.mp4`, 녹음 `assets/voice/test/test_take1.aac` | 고정 제목 레이아웃 확정 |
-| 캐릭터 | `assets/character/chahyung_v3_base.png`(v3 레이싱 슈트, 배경 제거본), 설정서 v3 `docs/character_chahyung.md`, 사용 가이드 v3 `assets/character/ip/` | 기준 디자인 확정 (v2.1 그림은 기록으로 보관) |
-| EP01 1분 쇼츠 | `output/ep01_gak_grandeur_1min.mp4` + `.srt`, 코드 `ep01_gak_grandeur.py`, 녹음 `assets/voice/ep01/ep01_take1.aac` | 1차 완성, 새 차형(v3) 반영 |
-| 렌더 코드 | `ep_grandeur2.py`~`ep_grandeur4.py`, `ep_voice_test.py`, `audio.py`, `narration.py`, `video.py` | |
+| 구분 | 내용 |
+|---|---|
+| 채널 | 차를 읽는 시간 — 옛날 차 이야기, 1분 세로 쇼츠(+가끔 4분 가로 롱폼, 네이버 블로그 시리즈) |
+| 캐릭터 | 차형 v3 (빨강·검정 레이싱 슈트, 가슴 CHAHYUNG). 기준 그림 한 장을 `tools/chahyung_motion.py`로 움직임(동작 12가지) |
+| 목소리 | EP03부터 구글 클라우드 TTS `ko-KR-Chirp3-HD-Algenib` (`tools/tts_lines.py`, 퀴즈 카운트다운 `count.wav` 함께 생성). EP01·02는 사용자 녹음 |
+| 저장소 | okfish153/kumhotire — 작업 브랜치 `claude/drive-docs-v2-1-ecoymf`, 기본 브랜치 `claude/youtube-shorts-reels-video-pbpz19` (2026-11-26 두 브랜치 같은 상태로 합침) |
+| 드라이브 | 「차를 읽는 시간」 1EKsBRwyZf-EsKgm0J5q_4erkElSWGduQ |
+| 매일 브리핑 | 예약 작업 「자동차 아침 브리핑」 trig_01BTMpMweRUxfybf4wLoX8fF — 매일 한국 시간 4:51 시작, 휴대폰 푸시. 지난 24시간 자동차 소식 + 채널 아이디어 3개(콘텐츠 목록으로 중복 표시) |
 
-## 확인된 사실 (출처)
-- **1세대 각그랜저**
-  - 1986년 출시, 초기 1,690만 원(이후 최고 2,890만 원대), 짜장면 600원, 대기업 초임 기본급 평균 31만 원: 오토뷰 articles/78206
-  - 오페라 글라스·크롬 몰딩: 현대자동차그룹 스토리 CONT0000000000063436
-- **짜장면 환산:** 2025년 서울 짜장면 평균 7,551원(한국소비자원 참가격) × 28,167그릇 ≈ 2억 1천만 원. **물가 환산이 아니라 짜장면 값 환산**임을 표현에 유지한다.
-- **2세대 뉴 그랜저**
-  - 1992년 9월 출시, 전장 4,980mm: 현대차 헤리티지
-  - 3.0 소시알 2,590만~3.0 골드 3,490만 원: 한국일보 1992-09-17
-  - 1994년 V6 3.5(225마력) 추가, 4,380만 원 육박: 오토뷰
-- **3세대 그랜저 XG**
-  - 1998년 9월 발표, 2,200만~2,700만 원대: 한국일보 1998-09-24
-  - 프레임리스 도어: 현대차그룹 스토리
+## 2. 완성된 콘텐츠 (자세한 내용은 콘텐츠 목록)
 
-## 환경 메모
-- Commons 접속: 이 저장소용 클라우드 환경 `kumhotire`에서 commons.wikimedia.org, upload.wikimedia.org, thumb.wikimedia.org를 허용함. 원본(upload)은 요청이 잦으면 429로 막히니, 사진은 thumb.wikimedia.org의 정해진 크기(960px·1280px 등) 썸네일로 받고, 저작자·라이선스는 Commons API(`prop=imageinfo&iiprop=extmetadata`)로 확인한다
-- 이 클라우드 환경에서는 Wikimedia Commons와 이미지 서버 접속이 막혀 있다. 실차 사진은 사용자가 내려받아 올린다.
-- OpenAI와 제미나이 API는 연결돼 있으나 둘 다 크레딧이 없다(제미나이는 선불 크레딧 소진).
-  - 그래서 이미지는 사용자가 제미나이 앱에서 만든다.
-  - 예상 비용 계산은 대화 기록 참고(제미나이 3 Pro로 캐릭터 시트 약 3,000원, Flash로 편당 약 450원).
-- 유튜브 쇼츠 설명란·댓글의 링크는 클릭되지 않는다. 다음 편 연결은 '관련 동영상' 기능을 쓴다.
+| 번호 | 형식 | 제목 | 코드 / 결과물 | 업로드 글 |
+|---|---|---|---|---|
+| EP01 | 쇼츠 57.8초 | 짜장면 28,000그릇 값? / 지금 짜장면 값으론 2억! (각그랜저) | `ep01_gak_grandeur.py` → `output/ep01_gak_grandeur_1min.mp4` | `docs/ep01_gak_grandeur_upload.md` |
+| EP02 | 쇼츠 54.3초 | 신입 월급 5년 치 차? / 1992 회장님 차 3,490만 원 (뉴 그랜저) | `ep02_new_grandeur.py` | `docs/ep02_new_grandeur_upload.md` |
+| EP03 | 쇼츠 45.8초 | 회장님 뒷자리 차에서 / 내가 직접 모는 차로? (그랜저 XG) | `ep03_grandeur_xg.py` | `docs/ep03_grandeur_xg_upload.md` |
+| EP04 | 쇼츠 48.4초 | 전성기의 문을 열다 / 출시 첫날 1만 1,362대 계약 (그랜저 TG) | `ep04_grandeur_tg.py` (ep03 틀 재사용) | `docs/ep04_grandeur_tg_upload.md` |
+| L01 | 롱폼 16:9 3분 53초 | 여러 번 구르고도 운전자는 살았다, 이젠 지붕 에어백까지 (제네시스) | `long01_genesis.py`, 썸네일 `tools/long01_thumbnail.py` | `docs/long01_genesis_gv90_upload.md` |
+| S01 | 홍보 쇼츠 31.9초 | 여러 번 구르고도 / 운전자는 살았다? | `short01_genesis.py` (빠른 컷·펀치 줌·흔들림) | `docs/short01_genesis_promo_upload.md` |
+| B01~04 | 네이버 블로그 | 제네시스 이야기 1~4편 (이미지 17장) | `docs/blog/genesis_0*.md`, 이미지 `tools/make_blog_genesis.py` → `assets/blog/genesis/` | — |
+
+대본·근거 표: `docs/epXX_*_script.md`, `docs/long01_genesis_gv90_script.md`, `docs/short01_genesis_promo_script.md`
+
+## 3. 제작 순서 (새 편을 만들 때)
+
+1. 콘텐츠 목록으로 중복 확인 → 사용자에게 "중복 없음/있음"만 알림
+2. 자료 조사: 숫자는 1차 자료(신문 당시 기사, 제조사 보도자료)로 확인, 근거 표 작성. 엇갈리면 쓰지 않음
+3. 대본 `docs/epXX_<이름>_script.md` (표 형식, 11문장 안팎) — 훅 / 정체 / 미끼 / 퀴즈+하나둘셋 / 정답 / "그 시절엔 말이죠" / 미끼 회수 / 흥미로운 사실 / 끝 문장(쉼표로 끝나 첫 문장으로)
+4. 사진: Wikimedia Commons만(저작자·라이선스를 Commons API로 확인, 번호판 흐림). 제조사 뉴스룸 사진은 약관상 불가(아래 5)
+5. 음성: `python3 tools/tts_lines.py docs/epXX_..._script.md assets/voice/epXX`
+6. 영상: 앞 편 코드를 복사해 장면만 바꿈(ep04가 가장 짧은 예). `--preview 초 초`로 장면 확인 → 전체 렌더
+7. 업로드 글(5개 플랫폼) 자동 작성 → 드라이브 에피소드 폴더에 구글 문서로
+8. 콘텐츠 목록에 한 줄 추가, 드라이브 시트 교체, 커밋·푸시
+
+## 4. 드라이브 구조
+
+```
+차를 읽는 시간/                            1EKsBRwyZf-EsKgm0J5q_4erkElSWGduQ
+├─ 00_채널 기본/                           1e8g8kt8DiSM3ZM2ajLd0r2iQvcmCrH6e  채널 규칙, SNS 채널 소개 글, 콘텐츠 목록 시트
+├─ 01_캐릭터_차형/                         1Lt_VzLT2_RQP29JV3QwhVhVG2Ajai38a  v3 기준 그림, IP(사용 가이드 v3 등), SNS_이미지
+├─ 02_공통 소스/                           (비어 있음)
+├─ 03_에피소드/그랜저/                     1SuXgYM51elN5xfqkIdAUshuQp1z6_HSQ
+│   ├─ EP01_각그랜저/   1smKi0hb34NXQxXtzsuuR5qsOvjgX3OgJ
+│   ├─ EP02_뉴그랜저/   1FN7YXC6_NVil_L78xdkwBgSKjZ0sPVWS
+│   ├─ EP03_그랜저XG/   1TG6pmm8JQZNnvOcD_Y2KJezqPw0-6QYm
+│   └─ EP04_그랜저TG/   1xsqgVCDiQMOpI-N2ChBYmV5ZjNbsEcZJ
+├─ 04_완성 영상 모음/                      1-WnBnyno0Qghmup15fVEr_CIKbw0rNsA
+├─ 05_롱폼/                                1oMvMp3UEL2yXMk1Czqahh0ukWRhefXo5  L01·S01 업로드 글, 대본, 썸네일, 자막
+├─ 06_블로그_제네시스시리즈/               1NlebKOJhjX7p38oz3dUL-WfqgPu0qXTE  원고 4편 + 이미지 17장
+├─ 07_ChatGPT_추억을읽는시간_이전키트/     ChatGPT용 정리본 (docs/chatgpt_kit/와 같은 내용)
+└─ 99_자료 출처/
+```
+- 드라이브 커넥터는 한 번에 약 3.1MB까지만 올라감 → 영상(mp4)은 사용자가 직접 올림. 저장소에는 mp4도 커밋돼 있음(50MB 넘는 롱폼은 GitHub 경고만 뜸)
+- 마크다운을 구글 문서로 올리면 이모지가 깨짐 → 문서에 이모지 쓰지 않음
+
+## 5. 꼭 기억할 교훈
+
+- **제네시스(현대차) 뉴스룸 사진:** 이용 약관이 서면 허락 없는 복제·게시와 상업적 이용을 금지 → 쓰지 않음. 사실 확인용 글만 읽음
+- **Commons:** 요청이 잦으면 429. 정해진 크기 썸네일(1280px/1920px)로 받고, 실패하면 10초씩 늘려 재시도
+- **사실 표현:** 숫자가 엇갈리면 쓰지 않음(예: TG 출시가 2,527만/2,587만). 사고 이야기는 원인(과속)과 공식 발언만, "이 차라서 살았다" 단정 금지. 횟수 불명은 "여러 번"
+- **인스타그램 해시태그 최대 5개**, 유튜브 쇼츠 최대 3분(4분은 일반 영상), 인스타 릴스 최대 3분
+- **TTS:** 짧은 말("셋!")은 따로 만들면 잘림 → "하나... 둘... 셋!"을 한 파일로 만들고 소리 구간으로 박자를 찾음
+- **글꼴:** Pretendard에 ✔ ✕ ○ 같은 기호가 없음 → 글자로 씀
+- **타입캐스트:** 무료 계정은 클라우드에서 API를 부르면 남용 감지로 막힘(키는 환경에 남아 있으나 안 씀)
+- **환경 `kumhotire` 네트워크:** Commons 3곳, newsroom.genesis.com 허용. 비밀값: 구글 TTS(헤더 X-Goog-Api-Key, 접두사 없음), 타입캐스트
+
+## 6. 남은 일 / 사용자 할 일
+
+- 영상 mp4를 드라이브·각 SNS에 직접 업로드, 업로드 글의 '(링크 넣기)'와 '관련 동영상' 연결
+- 게시 전 체크리스트(각 업로드 글 끝)의 기사 원문 확인
+- EP01·EP02는 영상 안에 구독·댓글 요청이 남아 있음(사용자 녹음이라 바꾸려면 끝 두 문장 재녹음 또는 AI 음성)
+- 캐릭터 IP: KIPRIS 검색, 변리사 상담, 벡터 최종본(디자이너)
+- 새 채널 「추억을 읽는 시간」은 ChatGPT(에이전트·예약 작업)로 운영 예정 → `docs/chatgpt_kit/` 참고
